@@ -1,0 +1,22 @@
+{
+  "attempted": 3,
+  "verified": 3,
+  "solve_rate": 1.0,
+  "solve_rate_wilson95": [
+    0.43849391955098227,
+    1
+  ],
+  "pass_at_1": 1.0,
+  "pass_at_10": null,
+  "pass_at_10_note": "not measured: benchmark currently records one search run per theorem",
+  "pass_at_1_protocol": "one bounded search run per theorem; no repeat samples",
+  "mean_solve_seconds": 10.542402853666621,
+  "median_solve_seconds": 10.19748888599861,
+  "mean_nodes_expanded": 1.0,
+  "mean_tactic_calls": 2.0,
+  "invalid_tactics": 2,
+  "timeouts": 0,
+  "inference_tokens": null,
+  "gpu_seconds": null,
+  "gpu_memory_mb": null
+}

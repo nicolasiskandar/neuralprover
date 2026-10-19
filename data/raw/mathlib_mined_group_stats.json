@@ -1,0 +1,10 @@
+{
+  "source_file": "Mathlib/Algebra/Group/Basic.lean",
+  "source_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "declaration_headers_seen": 206,
+  "recognized_simple_headers": 46,
+  "selected_candidates": 1,
+  "unrecognized_declaration_headers": 160,
+  "verified_examples": 1,
+  "failures": []
+}

@@ -1,0 +1,6 @@
+dataset: data/processed/test.jsonl
+seed: 17
+budgets:
+  max_nodes: 50
+  width: 5
+  timeout_seconds: 30

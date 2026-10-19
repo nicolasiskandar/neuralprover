@@ -1,0 +1,14 @@
+{
+  "schema_version": 3,
+  "backend": "lean_replay_subset",
+  "context_policy": "source_imports_and_active_context_excluding_target",
+  "theorem_id_policy": "source_file_and_qualified_declaration",
+  "source": "Mathlib",
+  "mathlib_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "split_seed": "neuralproof-v1",
+  "selection": "first N paths in sorted Mathlib/**/*.lean order",
+  "requested_files": 200,
+  "selected_files": 200,
+  "file_list_sha256": "f487dddd67ed7022875985f479aabccb46307660ec4c3b7ae3f2c414a67a2e2c",
+  "per_file_example_cap": 5
+}

@@ -1,0 +1,89 @@
+{
+  "source_file": "Mathlib/Data/Nat/Basic.lean",
+  "rows": 40,
+  "declarations_count": 11,
+  "validation_counts": {
+    "declaration_replayed": 2,
+    "replayed": 9
+  },
+  "declaration_results": {
+    "Nat.div_right_comm": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 1670,
+      "declaration_start": 1596
+    },
+    "Nat.dvd_antisymm_iff": {
+      "status": "declaration_replayed",
+      "reason": "partial_harness_not_representable",
+      "harness_contains_sorry": false,
+      "proof_start": 4009,
+      "declaration_start": 3878
+    },
+    "Nat.dvd_sub_self_left": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 4387,
+      "declaration_start": 4290
+    },
+    "Nat.dvd_sub_self_right": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 4697,
+      "declaration_start": 4597
+    },
+    "Nat.leRecOn_injective": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 2675,
+      "declaration_start": 2491
+    },
+    "Nat.leRecOn_surjective": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 3066,
+      "declaration_start": 2879
+    },
+    "Nat.mul_le_pow": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 4920,
+      "declaration_start": 4843
+    },
+    "Nat.pow_left_injective": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 1843,
+      "declaration_start": 1764
+    },
+    "Nat.pow_right_injective": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 1986,
+      "declaration_start": 1911
+    },
+    "Nat.pow_sub_one": {
+      "status": "replayed",
+      "reason": null,
+      "harness_contains_sorry": true,
+      "proof_start": 2160,
+      "declaration_start": 2055
+    },
+    "Nat.two_mul_sq_add_one_le_two_pow_two_mul": {
+      "status": "declaration_replayed",
+      "reason": "partial_harness_not_representable",
+      "harness_contains_sorry": false,
+      "proof_start": 5321,
+      "declaration_start": 5232
+    }
+  },
+  "policy": "latest_tactic_prefix_per_declaration; complete_declaration_fallback"
+}

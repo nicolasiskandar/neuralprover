@@ -1,0 +1,51 @@
+{
+  "theorem_id": "np_mined_Mathlib_Algebra_MvPolynomial_Basic_notMem_support_iff",
+  "model_id": "HuggingFaceTB/SmolLM2-135M",
+  "model_revision": "4e53f736cbb20a9a0f56b4c4bf378d9f306ff915",
+  "adapter": "experiments/smol-lora-smoke",
+  "training_rows": 5,
+  "training_split": "all five pilot records; smoke only",
+  "initial_goal_state": [
+    "⊢ m ∉ p.support ↔ p.coeff m = 0"
+  ],
+  "sample_candidates": [
+    "theorem np_mined_Mathlib_Algebra_MvPolynomial_Basic_notMem_support_iff {p : MvPolynomial σ R} : p.support ↔ p.coeff p = 0",
+    "theorem np_mined_Mathlib_Algebra_MvPolynomial_Basic_notMem_support_iff_Basic {p : MvPolynomial σ R} {m : σ →₀ ℕ} : m ∉ p.support ↔ p.coeff",
+    "Define (R σ) as for {p : MvPolynomial σ R} p: σ R",
+    "'⊢ m ∉ p.support ↔ p.coeff m = 0',",
+    "Theorem m_notMem_support_iff  :"
+  ],
+  "verified": false,
+  "proof": null,
+  "expanded": 1,
+  "tactic_calls": 3,
+  "trace": [
+    {
+      "initial_state_inspection": true,
+      "goals": [
+        "⊢ m ∉ p.support ↔ p.coeff m = 0"
+      ]
+    },
+    {
+      "depth": 0,
+      "tactic": "proposition[MvPolynomial,Equivalence]",
+      "score": 0.0,
+      "success": false,
+      "error": "/tmp/neuralproof-eleesuvr/Candidate.lean:15:3: error: unknown tactic\n/tmp/neuralproof-eleesuvr/Candidate.lean:14:142: error: unsolved goals"
+    },
+    {
+      "depth": 0,
+      "tactic": "prop r_not_mem_support_iff {p : MvPolynomial σ R} {r : ℕ} {m : σ →₀ ℕ} {s : σ → σ →₀ ℕ}",
+      "score": 0.0,
+      "success": false,
+      "error": "/tmp/neuralproof-dl1v4p4t/Candidate.lean:15:3: error: unknown tactic\n/tmp/neuralproof-dl1v4p4t/Candidate.lean:14:142: error: unsolved goals"
+    },
+    {
+      "depth": 0,
+      "tactic": "Theorem:",
+      "score": 0.0,
+      "success": false,
+      "error": "/tmp/neuralproof-hcm5utt2/Candidate.lean:15:3: error: unknown tactic\n/tmp/neuralproof-hcm5utt2/Candidate.lean:14:142: error: unsolved goals"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+theorem_id,verified,proof,search_trace,solve_seconds,expanded,tactic_calls,invalid_tactics,timeouts,inference_tokens,gpu_seconds,gpu_memory_mb
+np_true,True,"theorem np_true : True := by
+  trivial","[{'depth': 0, 'tactic': 'rfl', 'score': 1.0, 'success': False, 'error': '/tmp/neuralproof-0p3jiqj4/Candidate.lean:3:2: error: Tactic `rfl` failed: Expected the goal to be a binary relation'}, {'depth': 0, 'tactic': 'trivial', 'score': 0.99, 'success': True, 'error': ''}, {'final_verification': True, 'axioms': []}]",3.5494572800016613,1,2,1,0,,,
+np_add_zero,True,"theorem np_add_zero (n : Nat) : n + 0 = n := by
+  rfl","[{'depth': 0, 'tactic': 'rfl', 'score': 1.0, 'success': True, 'error': ''}, {'final_verification': True, 'axioms': []}]",2.429014591998566,1,1,0,0,,,

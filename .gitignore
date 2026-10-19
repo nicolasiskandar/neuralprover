@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+lean/.lake/
+data/cache/
+data/mathlib-info-tree-*/
+checkpoints/
+experiments/mathlib-info-tree-lora-*/

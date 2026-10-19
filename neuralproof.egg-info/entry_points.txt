@@ -1,0 +1,2 @@
+[console_scripts]
+neuralproof = neuralproof.cli:main

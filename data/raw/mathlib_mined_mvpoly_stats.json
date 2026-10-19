@@ -1,0 +1,10 @@
+{
+  "source_file": "Mathlib/Algebra/MvPolynomial/Basic.lean",
+  "source_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "declaration_headers_seen": 162,
+  "recognized_simple_headers": 14,
+  "selected_candidates": 1,
+  "unrecognized_declaration_headers": 148,
+  "verified_examples": 1,
+  "failures": []
+}

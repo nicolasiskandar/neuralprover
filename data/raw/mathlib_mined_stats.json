@@ -1,0 +1,71 @@
+{
+  "source_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "verified_examples": 1,
+  "modules": [
+    {
+      "source_file": "Mathlib/Data/Nat/Basic.lean",
+      "source_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+      "context_policy": "source_imports_and_active_context_excluding_target",
+      "declaration_headers_seen": 15,
+      "recognized_simple_headers": 4,
+      "selected_candidates": 4,
+      "unrecognized_declaration_headers": 11,
+      "verified_examples": 1,
+      "failures": [
+        {
+          "line": 65,
+          "name": "pow_left_injective",
+          "reason": "tactic replay did not close goal",
+          "detail": ""
+        },
+        {
+          "line": 68,
+          "name": "pow_right_injective",
+          "reason": "tactic replay did not close goal",
+          "detail": ""
+        },
+        {
+          "line": 158,
+          "name": "two_mul_sq_add_one_le_two_pow_two_mul",
+          "reason": "multi-tactic proof not supported by this pilot"
+        }
+      ]
+    },
+    {
+      "source_file": "Mathlib/Algebra/MvPolynomial/Basic.lean",
+      "source_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+      "context_policy": "source_imports_and_active_context_excluding_target",
+      "declaration_headers_seen": 162,
+      "recognized_simple_headers": 38,
+      "selected_candidates": 1,
+      "unrecognized_declaration_headers": 124,
+      "verified_examples": 0,
+      "failures": [
+        {
+          "line": 514,
+          "name": "notMem_support_iff",
+          "reason": "tactic replay did not close goal",
+          "detail": "/tmp/neuralproof-ugwsuj64/Candidate.lean:16:51: error: Function expected at\n/tmp/neuralproof-ugwsuj64/Candidate.lean:16:51: error: Function expected at\n/tmp/neuralproof-ugwsuj64/Candidate.lean:22:89: error: Function expected at"
+        }
+      ]
+    },
+    {
+      "source_file": "Mathlib/Algebra/Group/Basic.lean",
+      "source_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+      "context_policy": "source_imports_and_active_context_excluding_target",
+      "declaration_headers_seen": 206,
+      "recognized_simple_headers": 58,
+      "selected_candidates": 1,
+      "unrecognized_declaration_headers": 148,
+      "verified_examples": 0,
+      "failures": [
+        {
+          "line": 923,
+          "name": "mul_div_mul_left_eq_div",
+          "reason": "tactic replay did not close goal",
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

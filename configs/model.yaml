@@ -1,0 +1,14 @@
+base_model: "HuggingFaceTB/SmolLM2-135M"
+revision: "4e53f736cbb20a9a0f56b4c4bf378d9f306ff915" # Hugging Face immutable commit
+sequence_length: 1024
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: ["q_proj", "v_proj"]
+training:
+  epochs: 1
+  learning_rate: 0.0002
+  batch_size: 1
+  seed: 17
+  output_dir: experiments/smol-lora

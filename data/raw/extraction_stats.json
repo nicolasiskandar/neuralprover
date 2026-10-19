@@ -1,0 +1,10 @@
+{
+  "written": 2,
+  "failures": [
+    {
+      "theorem": "theorem np_pair (p q : Prop) (hp : p) (hq : q) : p \u2227 q := by",
+      "reason": "unsupported tactic block (bullets, cases, or nested syntax)"
+    }
+  ],
+  "source": "lean/NeuralProof/Samples.lean"
+}

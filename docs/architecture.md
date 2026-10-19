@@ -1,0 +1,11 @@
+# Architecture
+
+The pipeline is divided into data (`neuralproof.data`), Lean execution (`neuralproof.lean`), model (`neuralproof.models`), search (`neuralproof.search`), and evaluation (`neuralproof.evaluation`). LeanClient deliberately uses isolated compiler subprocesses and replays each prefix. This is slower than an incremental server, but the currently selected interface is explicit, crash-contained, and does not reuse failed tactic state. The Lean documentation describes an interactive REPL for machine clients; a future performance iteration can replace the replay backend with that protocol while preserving the Python datatypes.
+
+Search is best-first over predictor scores, bounded by expanded nodes, depth, and wall-clock time. Every successor is produced by Lean. A completed candidate is reconstructed and checked again by the compiler. Prefix-based deduplication only collapses identical histories; safe semantic deduplication needs environment-aware state identity.
+
+## Data record
+
+Each JSONL row contains `theorem_id`, `theorem` (declaration header), `context` (source imports and active directives, excluding the mined theorem), `goal_state` (Lean-printed current goal), `target_tactic`, source metadata, and `split`. Failures are written separately to extraction stats. The Mathlib replay corpus accepts a conservative subset of single-line tactic proofs and verifies each accepted row with Lean. It does not import Mathlib wholesale, because that can make the target theorem available in the proof context. Previous declarations from the same source file are not reconstructed and can cause explicit replay failures.
+
+For richer source coverage, `neuralproof data trace` uses the pinned Lean frontend and native InfoTree API to export tactic syntax, source ranges, declaration names when available, and before/after goal states. `neuralproof data normalize-trace` selects source-backed parser tactic spans, deduplicates nested nodes, and associates unnamed nodes only when a named proof span uniquely contains them. The normalized contexts are reconstructed from imports and active directives, so those rows are explicitly marked as observed in successful source elaboration but not independently replayed. Use the narrow replay extractor when standalone replay and kernel verification are required.
