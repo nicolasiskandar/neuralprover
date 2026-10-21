@@ -69,8 +69,12 @@ class MathlibExtractionTests(unittest.TestCase):
         self.assertEqual((len(mv),len(group)),(0,0))
         self.assertEqual(ms["context_policy"],"source_imports_and_active_context_excluding_target")
         self.assertEqual(gs["context_policy"],"source_imports_and_active_context_excluding_target")
-        self.assertIn("tactic replay did not close goal",[x["reason"] for x in ms["failures"]])
-        self.assertIn("tactic replay did not close goal",[x["reason"] for x in gs["failures"]])
+        # The incomplete context is rejected by Lean, so the extractor must
+        # record a failure with Lean's own diagnostic instead of a bare status.
+        for failures in (ms["failures"],gs["failures"]):
+            self.assertTrue(failures)
+            self.assertTrue(set(x["reason"] for x in failures) <= {"goal inspection failed","tactic replay did not close goal"})
+            self.assertTrue(failures[0]["detail"])
     def test_namespaced_declarations_get_unique_ids(self):
         root=Path(__file__).parents[1]/"lean/.lake/packages/mathlib"
         rows,stats=extract_mathlib_file(LeanClient(),root,"Mathlib/Algebra/BigOperators/ModEq.lean",5,"listSum_map")

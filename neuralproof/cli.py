@@ -23,7 +23,7 @@ def main():
     tr=s.add_parser("train"); tr.add_argument("--data",required=True); tr.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); tr.add_argument("--revision"); tr.add_argument("--output",default="experiments/smol-lora"); tr.add_argument("--epochs",type=int,default=1); tr.add_argument("--max-steps",type=int,default=0); tr.add_argument("--seed",type=int,default=17); tr.add_argument("--resume")
     ev=s.add_parser("evaluate"); ev.add_argument("--data",required=True); ev.add_argument("--output",default="experiments/smoke/results.jsonl"); ev.add_argument("--tactics",default="rfl,trivial,assumption,exact True.intro"); ev.add_argument("--nodes",type=int,default=20); ev.add_argument("--width",type=int,default=4); ev.add_argument("--model-id"); ev.add_argument("--adapter"); ev.add_argument("--revision"); ev.add_argument("--priority",choices=["model","bfs"],default="model"); ev.add_argument("--no-deduplicate",action="store_true")
     et=s.add_parser("evaluate-tactics"); et.add_argument("--data",required=True); et.add_argument("--output",default="experiments/tactic-prediction/results.json"); et.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); et.add_argument("--revision"); et.add_argument("--adapter",required=True); et.add_argument("--limit",type=int,default=100); et.add_argument("--seed",default="neuralproof-next-tactic-v1")
-    pp=s.add_parser("preprocess"); pp.add_argument("--input",default="data/raw/sample.jsonl"); pp.add_argument("--output",default="data/processed")
+    pp=s.add_parser("preprocess"); pp.add_argument("--input",default="data/raw/sample.jsonl"); pp.add_argument("--output",default="data/processed"); pp.add_argument("--seed",default="neuralproof-v1"); pp.add_argument("--include-unvalidated",action="store_true",help="keep rows whose context was never replayed by Lean; they are stamped validation_status=unreplayed")
     rp=s.add_parser("report"); rp.add_argument("--results-dir",default="experiments")
     a=p.parse_args()
     if a.cmd=="doctor": print(LeanClient().doctor()); print("Python",sys.version.split()[0]); return
@@ -86,7 +86,7 @@ def main():
                 failures.append({"theorem":head,"reason":"initial elaboration/state inspection failed","detail":inspection.error}); continue
             state=inspection.state
             for tactic in tactics:
-                row=dict(theorem_id=re.search(r"theorem\s+(\S+)",head).group(1),theorem=theorem,context=state.context,goal_state="\n".join(state.goals),target_tactic=tactic,source_file=str(src),split=split_for(str(src)))
+                row=dict(theorem_id=re.search(r"theorem\s+(\S+)",head).group(1),theorem=theorem,context=state.context,goal_state=state.goal_state,target_tactic=tactic,source_file=str(src),split=split_for(str(src)))
                 result=client.apply(state,tactic)
                 if not result.success:
                     failures.append({"theorem":head,"tactic":tactic,"reason":"tactic replay failed","detail":result.error}); break
@@ -104,12 +104,34 @@ def main():
         r=best_first(LeanClient(),theorem,predictor,context=context,max_nodes=30,width=3)
         print(json.dumps(vars(r),indent=2)); return
     if a.cmd=="preprocess":
-        from neuralproof.data.preprocessing import prepare_rows
+        from neuralproof.data.preprocessing import prepare_dataset
+        from neuralproof.data.provenance import (code_diff_sha256,code_revision,current_command,sha256_file,working_tree_state,write_manifest)
         dest=Path(a.output); dest.mkdir(parents=True,exist_ok=True)
-        source_rows=[json.loads(ln) for ln in Path(a.input).read_text().splitlines() if ln.strip()]
-        groups,excluded=prepare_rows(source_rows)
-        for name,rows in groups.items(): (dest/f"{name}.jsonl").write_text("".join(json.dumps(x,ensure_ascii=False)+"\n" for x in rows))
-        print(json.dumps({**{k:len(v) for k,v in groups.items()},"excluded_unvalidated":excluded,"input_rows":len(source_rows)})); return
+        source_path=Path(a.input)
+        source_rows=[json.loads(ln) for ln in source_path.read_text().splitlines() if ln.strip()]
+        result=prepare_dataset(source_rows,seed=a.seed,include_unvalidated=a.include_unvalidated)
+        for name,rows in result.groups.items(): (dest/f"{name}.jsonl").write_text("".join(json.dumps(x,ensure_ascii=False)+"\n" for x in rows))
+        manifest={"schema_version":1,"artifact":"processed_tactic_rows","command":current_command(),
+                  "code_revision":code_revision(),"code_state":working_tree_state(),
+                  "code_diff_sha256":code_diff_sha256(),"split_seed":result.split_seed,
+                  "input":{"path":str(source_path),"sha256":sha256_file(source_path),"rows":len(source_rows)},
+                  "outputs":{name:{"path":str(dest/f"{name}.jsonl"),"rows":len(rows),"sha256":sha256_file(dest/f"{name}.jsonl")} for name,rows in result.groups.items()},
+                  "split_counts":{name:len(rows) for name,rows in result.groups.items()},
+                  "excluded_unvalidated":result.excluded_unvalidated,
+                  "include_unvalidated":result.include_unvalidated,
+                  "split_disagreements":result.split_disagreements,
+                  "goal_scope_counts":result.goal_scope_counts,
+                  "validation_status_counts":result.validation_status_counts,
+                  "validation_policy":"rows are included only when validation is replayed, declaration_replayed, or absent; --include-unvalidated keeps the rest and stamps them unreplayed",
+                  "goal_scope_policy":"proof = mined state is the proof-global goal list; focus = mined inside a tactic focus; conv = mined conv subgoal",
+                  "caveats":["rows marked validation_status=unreplayed were never replayed by Lean and are not verified proofs",
+                             "rows marked goal_scope=focus were mined inside a tactic focus and do not match the proof-global state the live client reports"]}
+        write_manifest(dest/"manifest.json",manifest)
+        print(json.dumps({**{k:len(v) for k,v in result.groups.items()},"excluded_unvalidated":result.excluded_unvalidated,
+                          "include_unvalidated":result.include_unvalidated,
+                          "split_disagreements":result.split_disagreements,"goal_scope_counts":result.goal_scope_counts,
+                          "validation_status_counts":result.validation_status_counts,
+                          "split_seed":result.split_seed,"input_rows":len(source_rows),"manifest":str(dest/"manifest.json")})); return
     if a.cmd=="train":
         from neuralproof.models.finetune import train
         train(a.data,a.model,a.output,a.revision,a.epochs,a.seed,a.resume,a.max_steps); return

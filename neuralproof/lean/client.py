@@ -1,8 +1,11 @@
 """Replay-based Lean compiler client; Lean remains the proof authority."""
 from __future__ import annotations
-import re, shutil, subprocess, tempfile, time
+import json, re, shutil, subprocess, tempfile, time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+from neuralproof.goal_state import canonical_goal_state, split_goal_blocks
 
 @dataclass(frozen=True)
 class ProofState:
@@ -11,6 +14,15 @@ class ProofState:
     prefix: tuple[str, ...] = ()
     goals: tuple[str, ...] = ()
     state_id: str = ""
+
+    @property
+    def goal_state(self) -> str:
+        """Canonical rendering of the open goals, as shown to the model.
+
+        The mined corpus stores the same rendering, so a mined prompt and a
+        live prompt are identical once both are canonicalized.
+        """
+        return canonical_goal_state("\n".join(self.goals))
 
 @dataclass(frozen=True)
 class TacticCandidate:
@@ -33,6 +45,76 @@ class VerificationResult:
     elapsed_seconds: float
     axioms: tuple[str, ...] = ()
 
+@dataclass(frozen=True)
+class LeanRun:
+    """One Lean invocation, with its `--json` message stream parsed."""
+
+    returncode: int | None
+    messages: tuple[dict[str, Any], ...] = ()
+    stdout: str = ""
+    stderr: str = ""
+    timed_out: bool = False
+
+
+def _parse_messages(stdout: str) -> tuple[dict[str, Any], ...]:
+    """Parse the `lean --json` stream: one JSON message object per line.
+
+    Lines that are not JSON are skipped, so a launcher banner or a crash dump
+    does not hide the messages that Lean did emit.
+    """
+    messages = []
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            message = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(message, dict):
+            messages.append(message)
+    return tuple(messages)
+
+
+def _error_text(run: LeanRun) -> str:
+    """Describe a failed Lean run using its error messages, or its raw output."""
+    errors = [str(message.get("data", "")) for message in run.messages
+              if message.get("severity") == "error"]
+    if errors:
+        return "\n".join(errors)
+    tail = (run.stderr.strip() or run.stdout.strip())
+    return tail[-2000:] if tail else "Lean exited with a non-zero status"
+
+
+def _goal_region(run: LeanRun) -> str:
+    """The goal rendering produced by `trace_state`; no other message is included.
+
+    Lean tags `trace_state` output with the `trace` message kind, so linter
+    warnings and `sorry` notices cannot leak into the captured goal state.
+    """
+    return canonical_goal_state("\n".join(str(message.get("data", ""))
+                                          for message in run.messages
+                                          if message.get("kind") == "trace"))
+
+
+def _axioms(messages: tuple[dict[str, Any], ...]) -> tuple[str, ...]:
+    """The axioms reported by `#print axioms`, if that command ran."""
+    fallback: tuple[str, ...] | None = None
+    for message in messages:
+        if message.get("severity") != "information":
+            continue
+        data = str(message.get("data", ""))
+        if "axioms" not in data:
+            continue
+        # "'x' depends on axioms: [a, b]" names the dependencies; "'x' does not
+        # depend on any axioms" names none.
+        depends = re.search(r"depends on axioms:\s*\[([^\]]*)\]", data)
+        if depends:
+            return tuple(item.strip() for item in depends.group(1).split(",") if item.strip())
+        if fallback is None and re.search(r"\[([^\]]*)\]", data):
+            fallback = tuple(item.strip() for item in re.search(r"\[([^\]]*)\]", data).group(1).split(",") if item.strip())
+    return fallback if fallback is not None else ()
+
 class LeanClient:
     def __init__(self, project_dir: str | Path | None = None, timeout: float = 20):
         self.project_dir=Path(project_dir or Path(__file__).parents[2]/"lean").resolve()
@@ -46,51 +128,58 @@ class LeanClient:
     def _header(theorem):
         h=theorem.rstrip()
         return h if re.search(r":=\s*by\s*$",h) else h+" := by"
-    def _script(self,state,tactic=None,inspect=False):
-        lines=state.context.splitlines()+[self._header(state.theorem)] + ["  "+x for x in state.prefix]
-        if tactic is not None: lines.append("  "+tactic)
-        if inspect: lines += ["  all_goals trace_state","  all_goals sorry"]
+    def _script(self,state,body):
+        """Build a Lean file that replays `body` on top of the state's prefix."""
+        lines=(state.context.splitlines()+[self._header(state.theorem)]
+               +["  "+x for x in state.prefix]+["  "+x for x in body])
         return "\n".join(lines)+"\n"
+    def _run(self,script,*,prefix):
+        with tempfile.TemporaryDirectory(prefix=prefix) as td:
+            path=Path(td)/"Harness.lean"; path.write_text(script)
+            command=([self.lake,"env",self.lean,"--json",str(path)] if self.lake else [self.lean,"--json",str(path)])
+            try: p=subprocess.run(command,cwd=self.project_dir,capture_output=True,text=True,timeout=self.timeout)
+            except subprocess.TimeoutExpired: return LeanRun(None,timed_out=True)
+        return LeanRun(p.returncode,_parse_messages(p.stdout),p.stdout,p.stderr)
     def apply(self,state,tactic):
-        start=time.monotonic()
-        with tempfile.TemporaryDirectory(prefix="neuralproof-") as td:
-            path=Path(td)/"Candidate.lean"; path.write_text(self._script(state,tactic,True))
-            try: p=subprocess.run(([self.lake,"env",self.lean,str(path)] if self.lake else [self.lean,str(path)]),cwd=self.project_dir,capture_output=True,text=True,timeout=self.timeout)
-            except subprocess.TimeoutExpired: return ExecutionResult(False,None,False,"Lean execution timed out",time.monotonic()-start)
-        output=p.stdout+p.stderr
-        errors=[x for x in output.splitlines() if "error:" in x]
-        if p.returncode and errors and not any("sorry" in x for x in errors): return ExecutionResult(False,None,False,"\n".join(errors),time.monotonic()-start)
-        goals=tuple(x.strip() for x in re.findall(r"(?m)^\s*⊢\s+.*$",output))
+        started=time.monotonic()
+        run=self._run(self._script(state,[tactic,"all_goals trace_state","all_goals sorry"]),prefix="neuralproof-")
+        elapsed=time.monotonic()-started
+        if run.timed_out: return ExecutionResult(False,None,False,"Lean execution timed out",elapsed)
+        # Lean reports every failure with a non-zero exit status; the message
+        # format varies (`error:` and `error(code):` both occur), so the exit
+        # status is the only reliable failure signal.
+        if run.returncode: return ExecutionResult(False,None,False,_error_text(run),elapsed)
+        region=_goal_region(run)
+        goals=split_goal_blocks(region)
         nxt=ProofState(state.theorem,state.context,state.prefix+(tactic,),goals,repr(state.prefix+(tactic,)))
-        return ExecutionResult(True,nxt,not goals,"",time.monotonic()-start)
+        return ExecutionResult(True,nxt,not region,"",elapsed)
     def inspect(self,state):
         """Ask Lean to print the current goals without accepting them as proof."""
-        start=time.monotonic()
-        with tempfile.TemporaryDirectory(prefix="neuralproof-inspect-") as td:
-            path=Path(td)/"Inspect.lean"
-            path.write_text(self._script(state,"trace_state",False)+"  sorry\n")
-            try: p=subprocess.run(([self.lake,"env",self.lean,str(path)] if self.lake else [self.lean,str(path)]),cwd=self.project_dir,capture_output=True,text=True,timeout=self.timeout)
-            except subprocess.TimeoutExpired: return ExecutionResult(False,None,False,"Lean inspection timed out",time.monotonic()-start)
-        out=p.stdout+p.stderr
-        goals=tuple(x.strip() for x in re.findall(r"(?m)^\s*⊢\s+.*$",out))
-        if not goals and "⊢" not in out: return ExecutionResult(False,None,False,out,time.monotonic()-start)
-        return ExecutionResult(True,ProofState(state.theorem,state.context,state.prefix,goals,repr(state.prefix)),False,"",time.monotonic()-start)
+        started=time.monotonic()
+        # `all_goals trace_state` renders exactly like the mined corpus; a plain
+        # `trace_state` prints every goal in one message and inserts a blank line
+        # between goals, which no mined row contains.
+        run=self._run(self._script(state,["all_goals trace_state","all_goals sorry"]),prefix="neuralproof-inspect-")
+        elapsed=time.monotonic()-started
+        if run.timed_out: return ExecutionResult(False,None,False,"Lean inspection timed out",elapsed)
+        if run.returncode: return ExecutionResult(False,None,False,_error_text(run),elapsed)
+        region=_goal_region(run)
+        if not region: return ExecutionResult(False,None,False,"Lean reported no goal state",elapsed)
+        return ExecutionResult(True,ProofState(state.theorem,state.context,state.prefix,split_goal_blocks(region),repr(state.prefix)),False,"",elapsed)
     def initial_state(self,theorem,context="import Lean"): return ProofState(theorem,context)
     def render_proof(self,state): return self._header(state.theorem)+"\n"+"\n".join("  "+x for x in state.prefix)
     def verify(self,theorem_with_proof,context="import Lean"):
-        start=time.monotonic()
-        if re.search(r"\b(sorry|admit)\b",theorem_with_proof): return VerificationResult(False,"","placeholder token rejected",time.monotonic()-start)
+        started=time.monotonic()
+        if re.search(r"\b(sorry|admit)\b",theorem_with_proof): return VerificationResult(False,"","placeholder token rejected",time.monotonic()-started)
         match=re.search(r"(?m)^(?:theorem|lemma)\s+([^\s(:]+)",theorem_with_proof)
         declaration=match.group(1) if match else ""
         source=context.rstrip()+"\n"+theorem_with_proof.rstrip()+ (f"\n#print axioms {declaration}\n" if declaration else "")
-        with tempfile.TemporaryDirectory(prefix="neuralproof-verify-") as td:
-            path=Path(td)/"Verify.lean"; path.write_text(source+"\n")
-            try: p=subprocess.run(([self.lake,"env",self.lean,str(path)] if self.lake else [self.lean,str(path)]),cwd=self.project_dir,capture_output=True,text=True,timeout=self.timeout)
-            except subprocess.TimeoutExpired: return VerificationResult(False,"","Lean verification timed out",time.monotonic()-start)
-        out=p.stdout+p.stderr
-        axiom_match=re.search(r"\[([^]]*)\]",out)
-        axioms=tuple(x.strip() for x in axiom_match.group(1).split(",") if x.strip()) if axiom_match else ()
+        run=self._run(source+"\n",prefix="neuralproof-verify-")
+        elapsed=time.monotonic()-started
+        if run.timed_out: return VerificationResult(False,"","Lean verification timed out",elapsed)
+        axioms=_axioms(run.messages)
         allowed={"propext","Classical.choice","Quot.sound"}
         unexpected=tuple(x for x in axioms if x not in allowed)
-        if unexpected: out += "\nunexpected axiom dependencies: "+", ".join(unexpected)
-        return VerificationResult(p.returncode==0 and not unexpected,declaration,out,time.monotonic()-start,axioms)
+        output="\n".join(f"{m.get('severity')}: {m.get('data')}" for m in run.messages) or (run.stdout+run.stderr)
+        if unexpected: output+="\nunexpected axiom dependencies: "+", ".join(unexpected)
+        return VerificationResult(run.returncode==0 and not unexpected,declaration,output,elapsed,axioms)

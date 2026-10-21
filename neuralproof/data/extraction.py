@@ -85,7 +85,7 @@ def extract_mathlib_file(client, mathlib_root: str | Path, relative_file: str, l
         if not verified.verified:
             failures.append({"line":i+1,"name":original,"reason":"final verification failed","detail":verified.output}); continue
         rows.append({"theorem_id":new_name,"theorem":state.theorem,"context":context,
-            "goal_state":"\n".join(inspected.state.goals),"target_tactic":tactic,
+            "goal_state":inspected.state.goal_state,"target_tactic":tactic,
             "source_file":relative_file,"source_line":i+1,"source_declaration":qualified,
             "source_revision":MATHLIB_REVISION,"split":split_for(relative_file)})
         if len(rows)>=limit: break

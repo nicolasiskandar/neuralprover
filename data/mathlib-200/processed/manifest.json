@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "artifact": "processed_tactic_rows",
+  "command": "python -m neuralproof.cli preprocess --input data/mathlib-200/examples.jsonl --output data/mathlib-200/processed",
+  "code_revision": "27e2d01b49b062a27c503c53ea055d6c873d140a",
+  "code_state": "dirty",
+  "code_diff_sha256": "b8bad8d6e834662249d5882f0fe4c12f48237072ff844c8115eb68a0e665d4b4",
+  "split_seed": "neuralproof-v1",
+  "input": {
+    "path": "data/mathlib-200/examples.jsonl",
+    "sha256": "4f1a68e261f2e5efdd86657afee0e32503771cea569fb7342943118a457c0647",
+    "rows": 25
+  },
+  "outputs": {
+    "train": {
+      "path": "data/mathlib-200/processed/train.jsonl",
+      "rows": 22,
+      "sha256": "bfddadf2327b3891114522120c92c40c1b277d6fd3d7e3642ca938d0d4504844"
+    },
+    "validation": {
+      "path": "data/mathlib-200/processed/validation.jsonl",
+      "rows": 1,
+      "sha256": "4d47d11f7af252c0e5545364ee86dc72e2b032645a9fbe55927738b28fdbe2f6"
+    },
+    "test": {
+      "path": "data/mathlib-200/processed/test.jsonl",
+      "rows": 2,
+      "sha256": "f7a26c3d92e0e913961437198fc538add37bcb2ce3e8d9d6b36c1a90eca01383"
+    }
+  },
+  "split_counts": {
+    "train": 22,
+    "validation": 1,
+    "test": 2
+  },
+  "excluded_unvalidated": 0,
+  "include_unvalidated": false,
+  "split_disagreements": 0,
+  "goal_scope_counts": {
+    "proof": 25
+  },
+  "validation_status_counts": {
+    "replayed": 25
+  },
+  "validation_policy": "rows are included only when validation is replayed, declaration_replayed, or absent; --include-unvalidated keeps the rest and stamps them unreplayed",
+  "goal_scope_policy": "proof = mined state is the proof-global goal list; focus = mined inside a tactic focus; conv = mined conv subgoal",
+  "caveats": [
+    "rows marked validation_status=unreplayed were never replayed by Lean and are not verified proofs",
+    "rows marked goal_scope=focus were mined inside a tactic focus and do not match the proof-global state the live client reports"
+  ]
+}

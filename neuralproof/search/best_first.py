@@ -19,7 +19,7 @@ def best_first(client,theorem,predictor,*,context="import Lean",max_nodes=50,wid
     start=time.monotonic(); seq=count(); initial=client.inspect(client.initial_state(theorem,context)); seen=set(); expanded=calls=0; trace=[]
     if not initial.success or initial.state is None:
         return SearchResult(None,False,0,0,[{"initial_state_inspection":False,"error":initial.error}])
-    trace.append({"initial_state_inspection":True,"goals":list(initial.state.goals)})
+    trace.append({"initial_state_inspection":True,"goal_state":initial.state.goal_state,"goals":list(initial.state.goals)})
     queue=[(0.,next(seq),0,initial.state)]
     while queue and expanded<max_nodes and time.monotonic()-start<timeout:
         _,_,depth,state=heapq.heappop(queue)

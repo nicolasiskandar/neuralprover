@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "artifact": "processed_tactic_rows",
+  "command": "python -m neuralproof.cli preprocess --input data/validated/nat-basic.jsonl --output data/validated/nat-basic-processed",
+  "code_revision": "27e2d01b49b062a27c503c53ea055d6c873d140a",
+  "code_state": "dirty",
+  "code_diff_sha256": "b8bad8d6e834662249d5882f0fe4c12f48237072ff844c8115eb68a0e665d4b4",
+  "split_seed": "neuralproof-v1",
+  "input": {
+    "path": "data/validated/nat-basic.jsonl",
+    "sha256": "07bf4401bd19a915d9684de97269d2d60ff0c376bb90a70c632b672633a812b3",
+    "rows": 40
+  },
+  "outputs": {
+    "train": {
+      "path": "data/validated/nat-basic-processed/train.jsonl",
+      "rows": 40,
+      "sha256": "407529691c199ecfa18d2f1a94d40a2b347d0ec6733ddf68e4404eb8f8a17817"
+    },
+    "validation": {
+      "path": "data/validated/nat-basic-processed/validation.jsonl",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test": {
+      "path": "data/validated/nat-basic-processed/test.jsonl",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "split_counts": {
+    "train": 40,
+    "validation": 0,
+    "test": 0
+  },
+  "excluded_unvalidated": 0,
+  "include_unvalidated": false,
+  "split_disagreements": 0,
+  "goal_scope_counts": {
+    "proof": 33,
+    "focus": 7
+  },
+  "validation_status_counts": {
+    "replayed": 40
+  },
+  "validation_policy": "rows are included only when validation is replayed, declaration_replayed, or absent; --include-unvalidated keeps the rest and stamps them unreplayed",
+  "goal_scope_policy": "proof = mined state is the proof-global goal list; focus = mined inside a tactic focus; conv = mined conv subgoal",
+  "caveats": [
+    "rows marked validation_status=unreplayed were never replayed by Lean and are not verified proofs",
+    "rows marked goal_scope=focus were mined inside a tactic focus and do not match the proof-global state the live client reports"
+  ]
+}

@@ -1,5 +1,49 @@
 # Experiment log
 
+## 2026-10-21 — correctness pass: error detection, goal-state form, split integrity, artifact provenance
+
+- Fixed four correctness findings in the Lean client, the data pipeline, and the generated artifacts. No new theorem was proved and no model metric was recomputed in this pass; the numbers below are pipeline facts, not proof-solving results.
+
+### A1 — failure is Lean's exit status
+
+- `LeanClient.apply` and `LeanClient.inspect` now report failure exactly when Lean's exit status is non-zero. The previous `"sorry"` carve-out is removed: `all_goals sorry` is appended only to keep Lean from rejecting open goals, and it never makes a failed run look successful.
+- The failure text comes from Lean's own error messages. Lean emits both `error:` and `error(code):` headers, so the exit status is the only reliable signal and the message body is taken verbatim.
+- The client now runs `lean --json` and parses the message stream instead of scraping stdout. `kind: "trace"` carries the `trace_state` rendering; linter notices (`linter.unusedTactic`, `linter.unusedVariables`) and `hasSorry` notices are different kinds and cannot reach the captured goal state.
+- Two real bugs surfaced during this change and were fixed. Linter notices were previously appended to the goal state, so a captured state could contain a warning. The unused-variable linter's bracketed `[apply]` hint was parsed as an axiom dependency, so a valid proof with an unused binder was reported unverified; the axiom read now requires the actual `#print axioms` message.
+
+### A2 — one canonical goal state
+
+- New module `neuralproof/goal_state.py` defines the canonical form: leading and trailing newlines are stripped, so the mined `"\n⊢ True"` and the live `"⊢ True"` are the same string. `ProofState.goals` holds the per-goal blocks and `ProofState.goal_state` is a property over them.
+- `format_tactic_prompt` is the single choke point where the state is canonicalized. Preprocessing, training, inference, and search all go through it, so a mined prompt and a live prompt for the same state are byte-identical.
+- The harness uses `all_goals trace_state` in both `apply` and `inspect`, because a plain `trace_state` inserts a blank line between goals and no mined row contains one. The block splitter treats any `case <name>` header as a goal boundary; when several goals share one case header they stay in one block, and `goal_count` reports the exact number of open goals.
+- The mined corpus was not rebuilt. The canonical form is applied at the boundary, so the 6,221 stored rows are unchanged; only the derived prompts are canonical.
+- Scope audit of the corpus: by the raw definition (empty `result_state` and not the last tactic of the declaration) 1,062 of 6,221 rows carry a focus-local state, 17.1 %. Two of those are also conv-local, so the shipped classifier stamps 1,060 rows `focus` and 35 rows `conv` — 1,095 rows in total, 17.6 %, that are not proof-global. These rows do not match the proof-global state the live client reports. Repairing them requires replaying the corpus, which has not been done, so they are labelled rather than rewritten.
+
+### A3 — split integrity
+
+- `prepare_dataset` keeps the split recorded on the row and computes one only when the row has none. `--seed` is a fallback for those rows, not an override of recorded membership.
+- Disagreements between a recorded split and the recomputed split are counted and reported in the CLI output and the manifest, and are never applied silently. Across all four corpora the recomputation agrees with every stored split, so 0 disagreements and no membership change.
+- The split seed in force is `neuralproof-v1`.
+
+### A4 — regenerated artifacts with provenance
+
+- Every processed artifact was regenerated after A2 and now ships a `manifest.json` next to it, recording the exact command, the code revision, the working-tree state, the digest of the uncommitted patch, the input path with its SHA-256 and row count, the output paths with their SHA-256 and row counts, the split seed, the goal-scope counts, the validation-status counts, and the policies in force.
+- `neuralproof.data.provenance` provides `sha256_file`, `sha256_text`, `code_revision`, `working_tree_state`, `code_diff_sha256`, `current_command`, and `write_manifest`. The recorded state is `code_revision 27e2d01b49b062a27c503c53ea055d6c873d140a`, `code_state dirty`, `code_diff_sha256 b8bad8d6e834662…` — the artifacts were produced by an uncommitted working tree, and the manifest says so.
+- `preprocess` gained `--seed` and `--include-unvalidated`. The flag is off by default: rows that were never replayed by Lean are excluded. With `--include-unvalidated` they are kept and stamped `validation_status: "unreplayed"`.
+- Regenerated sets and their row counts: `data/processed` 2/0/0 (all `replayed`, scope proof 2); `data/mathlib-200/processed` 22/1/2 (`replayed`, scope proof 25); `data/validated/nat-basic-processed` 40/0/0 (`replayed`, scope proof 33 / focus 7); `data/mathlib-info-tree-200/processed` 4,977/798/446, all `unreplayed`, scope proof 5,126 / focus 1,060 / conv 35, produced with `--include-unvalidated` because no row of that corpus has been replayed.
+- A labeling bug was found and fixed while auditing: a row without a `result_state` field was being labelled `focus` even though the narrow extractor records no evidence about scope. `data/processed` changed from scope focus 1 / proof 1 to proof 2 after the fix; the other three sets were unaffected.
+- `data/traces/addconstmap-basic.json` was re-exported with the current InfoTree driver at schema 2: 1,120 tactic nodes, 771 completed, 264 command nodes.
+
+### Status of the 100-step adapter
+
+- The LoRA adapter in `experiments/mathlib-info-tree-lora-200-100steps` was trained on prompts produced before A2, from reconstructed contexts that were never replayed by Lean. Its evaluation — base 0/50 and LoRA 0/50 exact matches on the 50-example sample of the 446-row held-out set, Wilson 95 % interval [0, 0.07135] for both, recorded in `experiments/mathlib-info-tree-lora-200-100steps/tactic-eval-50.json` — describes that older pipeline and not the current one.
+- The pre-A2 and post-A2 numbers are therefore not comparable, and no metric was recomputed here. The adapter is kept as a stale artifact and is not used as evidence for or against the research hypotheses. A comparable evaluation needs a corpus that has been replayed.
+
+### Test outcome
+
+- `python -m unittest discover -s tests -v`: 54 tests, all passed, in 84.6 seconds. New coverage: `tests/test_lean.py` (13 cases, A1 regressions: unknown identifier, type mismatch, unknown tactic, failing tactic leaves the goals untouched, ill-typed header, linter notice absent from the goal state, unused binder still verifies), `tests/test_goal_state.py` (8 cases, canonical form, block splitting, goal counting, linter isolation, and mined/live prompt parity), `tests/test_data.py` (15 cases, split integrity, scope labelling, prompt format, provenance).
+- One pre-existing intermittent failure was removed rather than papered over: the `import Mathlib` kernel-verification case shared the class-wide 15 s client timeout, which is marginal under load for a full library import. It now uses its own 120 s budget and still performs the real Mathlib import and the kernel check. The previous baseline for this suite was 29 tests with that one failure.
+
 ## 2026-10-19 — source-context trajectory replay
 
 - Extended the pinned Lean InfoTree driver to emit whole command syntax spans alongside tactic states, and upgraded the Python reader to schema version 2 while retaining compatibility with the earlier array output.

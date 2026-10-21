@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "backend": "lean4_info_tree",
   "source_file": "Mathlib/Algebra/AddConstMap/Basic.lean",
   "source_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
@@ -11205,6 +11205,1857 @@
       "tactic": "simp [map_fract]\n\n"
     }
   ],
+  "commands": [
+    {
+      "declaration": "",
+      "source_end": "389",
+      "source_start": "156",
+      "source_text": "/-\nCopyright (c) 2024 Yury Kudryashov. All rights reserved.\nReleased under Apache 2.0 license as described in the file LICENSE.\nAuthors: Yury Kudryashov\n-/\nmodule\n\npublic import Mathlib.Algebra.Group.Action.Pi\npublic import Mathlib.Algebra.Group.End\npublic import Mathlib.Algebra.Module.NatInt\npublic import Mathlib.Algebra.Order.Archimedean.Basic\n\nimport Mathlib.Algebra.Order.Group.Basic",
+      "syntax_kind": "Lean.Parser.Module.header"
+    },
+    {
+      "declaration": "",
+      "source_end": "209",
+      "source_start": "164",
+      "source_text": "public import Mathlib.Algebra.Group.Action.Pi\n",
+      "syntax_kind": "Lean.Parser.Module.import"
+    },
+    {
+      "declaration": "",
+      "source_end": "249",
+      "source_start": "210",
+      "source_text": "public import Mathlib.Algebra.Group.End\n",
+      "syntax_kind": "Lean.Parser.Module.import"
+    },
+    {
+      "declaration": "",
+      "source_end": "293",
+      "source_start": "250",
+      "source_text": "public import Mathlib.Algebra.Module.NatInt\n",
+      "syntax_kind": "Lean.Parser.Module.import"
+    },
+    {
+      "declaration": "",
+      "source_end": "347",
+      "source_start": "294",
+      "source_text": "public import Mathlib.Algebra.Order.Archimedean.Basic\n\n",
+      "syntax_kind": "Lean.Parser.Module.import"
+    },
+    {
+      "declaration": "",
+      "source_end": "389",
+      "source_start": "349",
+      "source_text": "import Mathlib.Algebra.Order.Group.Basic",
+      "syntax_kind": "Lean.Parser.Module.import"
+    },
+    {
+      "declaration": "",
+      "source_end": "1007",
+      "source_start": "391",
+      "source_text": "/-!\n# Maps (semi)conjugating a shift to a shift\n\nDenote by $S^1$ the unit circle `UnitAddCircle`.\nA common way to study a self-map $f\\colon S^1\\to S^1$ of degree `1`\nis to lift it to a map $\\tilde f\\colon \\mathbb R\\to \\mathbb R$\nsuch that $\\tilde f(x + 1) = \\tilde f(x)+1$ for all `x`.\n\nIn this file we define a structure and a typeclass\nfor bundled maps satisfying `f (x + a) = f x + b`.\n\nWe use parameters `a` and `b` instead of `1` to accommodate for two use cases:\n\n- maps between circles of different lengths;\n- self-maps $f\\colon S^1\\to S^1$ of degree other than one,\n  including orientation-reversing maps.\n-/\n\n",
+      "syntax_kind": "Lean.Parser.Command.moduleDoc"
+    },
+    {
+      "declaration": "",
+      "source_end": "1033",
+      "source_start": "1009",
+      "source_text": "@[expose] public section\n\n",
+      "syntax_kind": "Lean.Parser.Command.section"
+    },
+    {
+      "declaration": "",
+      "source_end": "1059",
+      "source_start": "1035",
+      "source_text": "assert_not_exists Finset\n\n",
+      "syntax_kind": "Lean.Parser.Command.assertNotExists"
+    },
+    {
+      "declaration": "",
+      "source_end": "1078",
+      "source_start": "1061",
+      "source_text": "open Function Set\n\n",
+      "syntax_kind": "Lean.Parser.Command.open"
+    },
+    {
+      "declaration": "",
+      "source_end": "1615",
+      "source_start": "1080",
+      "source_text": "/-- A bundled map `f : G → H` such that `f (x + a) = f x + b` for all `x`,\ndenoted as `f : G →+c[a, b] H`.\n\nOne can think about `f` as a lift to `G` of a map between two `AddCircle`s. -/\nstructure AddConstMap (G H : Type*) [Add G] [Add H] (a : G) (b : H) where\n  /-- The underlying function of an `AddConstMap`.\n  Use automatic coercion to function instead. -/\n  protected toFun : G → H\n  /-- An `AddConstMap` satisfies `f (x + a) = f x + b`. Use `map_add_const` instead. -/\n  map_add_const' (x : G) : toFun (x + a) = toFun x + b\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": "@[inherit_doc]\nscoped[AddConstMap] notation:25 G \" →+c[\" a \", \" b \"] \" H => AddConstMap G H a b\n\n",
+      "syntax_kind": "Mathlib.Tactic.scopedNS"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " with_weak_namespace  _root_.AddConstMap @[inherit_doc]\n scoped  notation :25 G \" →+c[\" a \", \" b \"] \" H  => AddConstMap G H a b\n\n",
+      "syntax_kind": "choice"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " with_weak_namespace  _root_.AddConstMap @[inherit_doc]\n scoped  notation :25 G \" →+c[\" a \", \" b \"] \" H  => AddConstMap G H a b\n\n",
+      "syntax_kind": "Lean.Elab.Command.commandWith_weak_namespace__"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": "@[inherit_doc]\n scoped  notation :25 G \" →+c[\" a \", \" b \"] \" H  => AddConstMap G H a b\n\n",
+      "syntax_kind": "Lean.Parser.Command.notation"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " @[ inherit_docAddConstMap  ,  scoped  term_parser  1000  ]  public  meta  def  «term_→+c[_,_]_»  :  Lean.TrailingParserDescr  :=  ParserDescr.trailingNode  `AddConstMap.«term_→+c[_,_]_»  25  0  ParserDescr.binary  `andthen  ParserDescr.binary  `andthen  ParserDescr.binary  `andthen  ParserDescr.binary  `andthen  ParserDescr.binary  `andthen  ParserDescr.symbol  \" →+c[\"  ParserDescr.cat  `term  0  ParserDescr.symbol  \", \"  ParserDescr.cat  `term  0  ParserDescr.symbol  \"] \"  ParserDescr.cat  `term  0 ",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.«term_→+c[_,_]_»",
+      "source_end": "1706",
+      "source_start": "1619",
+      "source_text": "inherit_docAddConstMap ",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap.«term_→+c[_,_]_»",
+      "source_end": "1630",
+      "source_start": "1619",
+      "source_text": "inherit_doc",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "AddConstMap.«term_→+c[_,_]_»",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " term_parser  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap.«term_→+c[_,_]_»",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " term_parser ",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " scoped  macro_rules  |  `(  $ G   →+c[  $ a  ,   $ b  ]   $ H  )  =>  `  `( AddConstMap  $ G  $ H  $ a  $ b\n\n ) ",
+      "syntax_kind": "Lean.Parser.Command.macro_rules"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " scoped  macro_rules  (  kind  :=  AddConstMap.«term_→+c[_,_]_»  )  |  `(  $ G   →+c[  $ a  ,   $ b  ]   $ H  )  =>  `  `( AddConstMap  $ G  $ H  $ a  $ b\n\n ) ",
+      "syntax_kind": "Lean.Parser.Command.macro_rules"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " @[  scoped  macro  AddConstMap.«term_→+c[_,_]_»  ]  public  aux_def  macroRules  AddConstMap.«term_→+c[_,_]_»  :  Macro  :=  fun  |  `(  $ G   →+c[  $ a  ,   $ b  ]   $ H  )  =>  `  `( AddConstMap  $ G  $ H  $ a  $ b\n\n )  |  _  =>  no_error_if_unused%  throw  Lean.Macro.Exception.unsupportedSyntax ",
+      "syntax_kind": "Lean.Elab.Command.aux_def"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " @[  scoped  macro  AddConstMap.«term_→+c[_,_]_»  ]  public  meta  def  «_aux___macroRules_AddConstMap_term_→+c[_,_]__1»  :  Macro  :=  fun  |  `(  $ G   →+c[  $ a  ,   $ b  ]   $ H  )  =>  `  `( AddConstMap  $ G  $ H  $ a  $ b\n\n )  |  _  =>  no_error_if_unused%  throw  Lean.Macro.Exception.unsupportedSyntax ",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.«_aux___macroRules_AddConstMap_term_→+c[_,_]__1»",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " macro  AddConstMap.«term_→+c[_,_]_» ",
+      "syntax_kind": "Lean.Parser.Attr.macro"
+    },
+    {
+      "declaration": "AddConstMap.«_aux___macroRules_AddConstMap_term_→+c[_,_]__1»",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " macro ",
+      "syntax_kind": "macro"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " @[  scoped  app_unexpander  AddConstMap  ]  public  aux_def  unexpand  AddConstMap  :  Lean.PrettyPrinter.Unexpander  :=  fun  |  `(  $  f  :  ident  $ G  $ H  $ a  $ b\n\n )  =>  withRef  f  `(  $ G   →+c[  $ a  ,   $ b  ]   $ H  )  |  _  =>  throw  (    ) ",
+      "syntax_kind": "Lean.Elab.Command.aux_def"
+    },
+    {
+      "declaration": "",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " @[  scoped  app_unexpander  AddConstMap  ]  public  meta  def  _aux___unexpand_AddConstMap_1  :  Lean.PrettyPrinter.Unexpander  :=  fun  |  `(  $  f  :  ident  $ G  $ H  $ a  $ b\n\n )  =>  withRef  f  `(  $ G   →+c[  $ a  ,   $ b  ]   $ H  )  |  _  =>  throw  (    ) ",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap._aux___unexpand_AddConstMap_1",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " app_unexpander  AddConstMap ",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap._aux___unexpand_AddConstMap_1",
+      "source_end": "1714",
+      "source_start": "1617",
+      "source_text": " app_unexpander ",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "",
+      "source_end": "2238",
+      "source_start": "1716",
+      "source_text": "/-- Typeclass for maps satisfying `f (x + a) = f x + b`.\n\nNote that `a` and `b` are `outParam`s,\nso one should not add instances like\n`[AddConstMapClass F G H a b] : AddConstMapClass F G H (-a) (-b)`. -/\nclass AddConstMapClass (F : Type*) (G H : outParam Type*) [Add G] [Add H]\n    (a : outParam G) (b : outParam H) [FunLike F G H] : Prop where\n  /-- A map of `AddConstMapClass` class semiconjugates shift by `a` to the shift by `b`:\n  `∀ x, f (x + a) = f x + b`. -/\n  map_add_const (f : F) (x : G) : f (x + a) = f x + b\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "",
+      "source_end": "2266",
+      "source_start": "2240",
+      "source_text": "namespace AddConstMapClass\n\n",
+      "syntax_kind": "Lean.Parser.Command.namespace"
+    },
+    {
+      "declaration": "",
+      "source_end": "2393",
+      "source_start": "2268",
+      "source_text": "/-!\n### Properties of `AddConstMapClass` maps\n\nIn this section we prove properties like `f (x + n • a) = f x + n • b`.\n-/\n\n",
+      "syntax_kind": "Lean.Parser.Command.moduleDoc"
+    },
+    {
+      "declaration": "",
+      "source_end": "2450",
+      "source_start": "2395",
+      "source_text": "scoped[AddConstMapClass] attribute [simp] map_add_const\n\n",
+      "syntax_kind": "Mathlib.Tactic.scopedNS"
+    },
+    {
+      "declaration": "",
+      "source_end": "2450",
+      "source_start": "2395",
+      "source_text": " with_weak_namespace  _root_.AddConstMapClass  attribute  [  scoped simp ] map_add_const\n\n",
+      "syntax_kind": "choice"
+    },
+    {
+      "declaration": "",
+      "source_end": "2450",
+      "source_start": "2395",
+      "source_text": " with_weak_namespace  _root_.AddConstMapClass  attribute  [  scoped simp ] map_add_const\n\n",
+      "syntax_kind": "Lean.Elab.Command.commandWith_weak_namespace__"
+    },
+    {
+      "declaration": "",
+      "source_end": "2450",
+      "source_start": "2395",
+      "source_text": " attribute  [  scoped simp ] map_add_const\n\n",
+      "syntax_kind": "Lean.Parser.Command.attribute"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_const",
+      "source_end": "2435",
+      "source_start": "2431",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_const",
+      "source_end": "2435",
+      "source_start": "2431",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "2508",
+      "source_start": "2452",
+      "source_text": "variable {F G H : Type*} [FunLike F G H] {a : G} {b : H}\n\n",
+      "syntax_kind": "Lean.Parser.Command.variable"
+    },
+    {
+      "declaration": "",
+      "source_end": "2645",
+      "source_start": "2510",
+      "source_text": "protected theorem semiconj [Add G] [Add H] [AddConstMapClass F G H a b] (f : F) :\n    Semiconj f (· + a) (· + b) :=\n  map_add_const f\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "2965",
+      "source_start": "2740",
+      "source_text": "@[scoped simp]\ntheorem map_add_nsmul [AddMonoid G] [AddMonoid H] [AddConstMapClass F G H a b]\n    (f : F) (x : G) (n : ℕ) : f (x + n • a) = f x + n • b := by\n  simpa using (AddConstMapClass.semiconj f).iterate_right n x\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_nsmul",
+      "source_end": "2753",
+      "source_start": "2749",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_nsmul",
+      "source_end": "2753",
+      "source_start": "2749",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "3248",
+      "source_start": "3060",
+      "source_text": "@[scoped simp]\ntheorem map_add_nat' [AddMonoidWithOne G] [AddMonoid H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) (n : ℕ) : f (x + n) = f x + n • b := by simp [← map_add_nsmul]\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_nat'",
+      "source_end": "3073",
+      "source_start": "3069",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_nat'",
+      "source_end": "3073",
+      "source_start": "3069",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "3390",
+      "source_start": "3250",
+      "source_text": "theorem map_add_one [AddMonoidWithOne G] [Add H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) : f (x + 1) = f x + b := map_add_const f x\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "3709",
+      "source_start": "3485",
+      "source_text": "@[scoped simp]\ntheorem map_add_ofNat' [AddMonoidWithOne G] [AddMonoid H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) (n : ℕ) [n.AtLeastTwo] :\n    f (x + ofNat(n)) = f x + (ofNat(n) : ℕ) • b :=\n  map_add_nat' f x n\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_ofNat'",
+      "source_end": "3498",
+      "source_start": "3494",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_ofNat'",
+      "source_end": "3498",
+      "source_start": "3494",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "3864",
+      "source_start": "3711",
+      "source_text": "theorem map_add_nat [AddMonoidWithOne G] [AddMonoidWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (x : G) (n : ℕ) : f (x + n) = f x + n := by simp\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "4064",
+      "source_start": "3866",
+      "source_text": "theorem map_add_ofNat [AddMonoidWithOne G] [AddMonoidWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (x : G) (n : ℕ) [n.AtLeastTwo] :\n    f (x + ofNat(n)) = f x + ofNat(n) := map_add_nat f x n\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "4311",
+      "source_start": "4159",
+      "source_text": "@[scoped simp]\ntheorem map_const [AddZeroClass G] [Add H] [AddConstMapClass F G H a b] (f : F) :\n    f a = f 0 + b := by\n  simpa using map_add_const f 0\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_const",
+      "source_end": "4172",
+      "source_start": "4168",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_const",
+      "source_end": "4172",
+      "source_start": "4168",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "4435",
+      "source_start": "4313",
+      "source_text": "theorem map_one [AddZeroClass G] [One G] [Add H] [AddConstMapClass F G H 1 b] (f : F) :\n    f 1 = f 0 + b :=\n  map_const f\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "4717",
+      "source_start": "4530",
+      "source_text": "@[scoped simp]\ntheorem map_nsmul_const [AddMonoid G] [AddMonoid H] [AddConstMapClass F G H a b]\n    (f : F) (n : ℕ) : f (n • a) = f 0 + n • b := by\n  simpa using map_add_nsmul f 0 n\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nsmul_const",
+      "source_end": "4543",
+      "source_start": "4539",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nsmul_const",
+      "source_end": "4543",
+      "source_start": "4539",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "4990",
+      "source_start": "4812",
+      "source_text": "@[scoped simp]\ntheorem map_nat' [AddMonoidWithOne G] [AddMonoid H] [AddConstMapClass F G H 1 b]\n    (f : F) (n : ℕ) : f n = f 0 + n • b := by\n  simpa using map_add_nat' f 0 n\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nat'",
+      "source_end": "4825",
+      "source_start": "4821",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nat'",
+      "source_end": "4825",
+      "source_start": "4821",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "5179",
+      "source_start": "4992",
+      "source_text": "theorem map_ofNat' [AddMonoidWithOne G] [AddMonoid H] [AddConstMapClass F G H 1 b]\n    (f : F) (n : ℕ) [n.AtLeastTwo] :\n    f (ofNat(n)) = f 0 + (ofNat(n) : ℕ) • b :=\n  map_nat' f n\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "5316",
+      "source_start": "5181",
+      "source_text": "theorem map_nat [AddMonoidWithOne G] [AddMonoidWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (n : ℕ) : f n = f 0 + n := by simp\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "5492",
+      "source_start": "5318",
+      "source_text": "theorem map_ofNat [AddMonoidWithOne G] [AddMonoidWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (n : ℕ) [n.AtLeastTwo] :\n    f ofNat(n) = f 0 + ofNat(n) := map_nat f n\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "5756",
+      "source_start": "5587",
+      "source_text": "@[scoped simp]\ntheorem map_const_add [AddCommMagma G] [Add H] [AddConstMapClass F G H a b]\n    (f : F) (x : G) : f (a + x) = f x + b := by\n  rw [add_comm, map_add_const]\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_const_add",
+      "source_end": "5600",
+      "source_start": "5596",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_const_add",
+      "source_end": "5600",
+      "source_start": "5596",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "5902",
+      "source_start": "5758",
+      "source_text": "theorem map_one_add [AddCommMonoidWithOne G] [Add H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) : f (1 + x) = f x + b := map_const_add f x\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "6195",
+      "source_start": "5997",
+      "source_text": "@[scoped simp]\ntheorem map_nsmul_add [AddCommMonoid G] [AddMonoid H] [AddConstMapClass F G H a b]\n    (f : F) (n : ℕ) (x : G) : f (n • a + x) = f x + n • b := by\n  rw [add_comm, map_add_nsmul]\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nsmul_add",
+      "source_end": "6010",
+      "source_start": "6006",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nsmul_add",
+      "source_end": "6010",
+      "source_start": "6006",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "6494",
+      "source_start": "6290",
+      "source_text": "@[scoped simp]\ntheorem map_nat_add' [AddCommMonoidWithOne G] [AddMonoid H] [AddConstMapClass F G H 1 b]\n    (f : F) (n : ℕ) (x : G) : f (↑n + x) = f x + n • b := by\n  simpa using map_nsmul_add f n x\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nat_add'",
+      "source_end": "6303",
+      "source_start": "6299",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_nat_add'",
+      "source_end": "6303",
+      "source_start": "6299",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "6701",
+      "source_start": "6496",
+      "source_text": "theorem map_ofNat_add' [AddCommMonoidWithOne G] [AddMonoid H] [AddConstMapClass F G H 1 b]\n    (f : F) (n : ℕ) [n.AtLeastTwo] (x : G) :\n    f (ofNat(n) + x) = f x + ofNat(n) • b :=\n  map_nat_add' f n x\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "6863",
+      "source_start": "6703",
+      "source_text": "theorem map_nat_add [AddCommMonoidWithOne G] [AddMonoidWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (n : ℕ) (x : G) : f (↑n + x) = f x + n := by simp\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "7069",
+      "source_start": "6865",
+      "source_text": "theorem map_ofNat_add [AddCommMonoidWithOne G] [AddMonoidWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (n : ℕ) [n.AtLeastTwo] (x : G) :\n    f (ofNat(n) + x) = f x + ofNat(n) :=\n  map_nat_add f n x\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "7412",
+      "source_start": "7164",
+      "source_text": "@[scoped simp]\ntheorem map_sub_nsmul [AddGroup G] [AddGroup H] [AddConstMapClass F G H a b]\n    (f : F) (x : G) (n : ℕ) : f (x - n • a) = f x - n • b := by\n  conv_rhs => rw [← sub_add_cancel x (n • a), map_add_nsmul, add_sub_cancel_right]\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_nsmul",
+      "source_end": "7177",
+      "source_start": "7173",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_nsmul",
+      "source_end": "7177",
+      "source_start": "7173",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "7680",
+      "source_start": "7507",
+      "source_text": "@[scoped simp]\ntheorem map_sub_const [AddGroup G] [AddGroup H] [AddConstMapClass F G H a b]\n    (f : F) (x : G) : f (x - a) = f x - b := by\n  simpa using map_sub_nsmul f x 1\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_const",
+      "source_end": "7520",
+      "source_start": "7516",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_const",
+      "source_end": "7520",
+      "source_start": "7516",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "7829",
+      "source_start": "7682",
+      "source_text": "theorem map_sub_one [AddGroup G] [One G] [AddGroup H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) : f (x - 1) = f x - b :=\n  map_sub_const f x\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "8119",
+      "source_start": "7924",
+      "source_text": "@[scoped simp]\ntheorem map_sub_nat' [AddGroupWithOne G] [AddGroup H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) (n : ℕ) : f (x - n) = f x - n • b := by\n  simpa using map_sub_nsmul f x n\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_nat'",
+      "source_end": "7937",
+      "source_start": "7933",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_nat'",
+      "source_end": "7937",
+      "source_start": "7933",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "8428",
+      "source_start": "8214",
+      "source_text": "@[scoped simp]\ntheorem map_sub_ofNat' [AddGroupWithOne G] [AddGroup H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) (n : ℕ) [n.AtLeastTwo] :\n    f (x - ofNat(n)) = f x - ofNat(n) • b :=\n  map_sub_nat' f x n\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_ofNat'",
+      "source_end": "8227",
+      "source_start": "8223",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_ofNat'",
+      "source_end": "8227",
+      "source_start": "8223",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "8753",
+      "source_start": "8523",
+      "source_text": "@[scoped simp]\ntheorem map_add_zsmul [AddGroup G] [AddGroup H] [AddConstMapClass F G H a b]\n    (f : F) (x : G) : ∀ n : ℤ, f (x + n • a) = f x + n • b\n  | (n : ℕ) => by simp\n  | .negSucc n => by simp [← sub_eq_add_neg]\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_zsmul",
+      "source_end": "8536",
+      "source_start": "8532",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_zsmul",
+      "source_end": "8536",
+      "source_start": "8532",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "9033",
+      "source_start": "8848",
+      "source_text": "@[scoped simp]\ntheorem map_zsmul_const [AddGroup G] [AddGroup H] [AddConstMapClass F G H a b]\n    (f : F) (n : ℤ) : f (n • a) = f 0 + n • b := by\n  simpa using map_add_zsmul f 0 n\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_zsmul_const",
+      "source_end": "8861",
+      "source_start": "8857",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_zsmul_const",
+      "source_end": "8861",
+      "source_start": "8857",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "9331",
+      "source_start": "9128",
+      "source_text": "@[scoped simp]\ntheorem map_add_int' [AddGroupWithOne G] [AddGroup H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) (n : ℤ) : f (x + n) = f x + n • b := by\n  rw [← map_add_zsmul f x n, zsmul_one]\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_int'",
+      "source_end": "9141",
+      "source_start": "9137",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_add_int'",
+      "source_end": "9141",
+      "source_start": "9137",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "9484",
+      "source_start": "9333",
+      "source_text": "theorem map_add_int [AddGroupWithOne G] [AddGroupWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (x : G) (n : ℤ) : f (x + n) = f x + n := by simp\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "9794",
+      "source_start": "9579",
+      "source_text": "@[scoped simp]\ntheorem map_sub_zsmul [AddGroup G] [AddGroup H] [AddConstMapClass F G H a b]\n    (f : F) (x : G) (n : ℤ) : f (x - n • a) = f x - n • b := by\n  simpa [sub_eq_add_neg] using map_add_zsmul f x (-n)\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_zsmul",
+      "source_end": "9592",
+      "source_start": "9588",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_zsmul",
+      "source_end": "9592",
+      "source_start": "9588",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "10086",
+      "source_start": "9889",
+      "source_text": "@[scoped simp]\ntheorem map_sub_int' [AddGroupWithOne G] [AddGroup H] [AddConstMapClass F G H 1 b]\n    (f : F) (x : G) (n : ℤ) : f (x - n) = f x - n • b := by\n  rw [← map_sub_zsmul, zsmul_one]\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_int'",
+      "source_end": "9902",
+      "source_start": "9898",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_sub_int'",
+      "source_end": "9902",
+      "source_start": "9898",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "10239",
+      "source_start": "10088",
+      "source_text": "theorem map_sub_int [AddGroupWithOne G] [AddGroupWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (x : G) (n : ℤ) : f (x - n) = f x - n := by simp\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "10530",
+      "source_start": "10334",
+      "source_text": "@[scoped simp]\ntheorem map_zsmul_add [AddCommGroup G] [AddGroup H] [AddConstMapClass F G H a b]\n    (f : F) (n : ℤ) (x : G) : f (n • a + x) = f x + n • b := by\n  rw [add_comm, map_add_zsmul]\n\n-- For the use of `scoped` rather than `simp`, see library note [Simp lemmas with weak keys]\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_zsmul_add",
+      "source_end": "10347",
+      "source_start": "10343",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_zsmul_add",
+      "source_end": "10347",
+      "source_start": "10343",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "10829",
+      "source_start": "10625",
+      "source_text": "@[scoped simp]\ntheorem map_int_add' [AddCommGroupWithOne G] [AddGroup H] [AddConstMapClass F G H 1 b]\n    (f : F) (n : ℤ) (x : G) : f (↑n + x) = f x + n • b := by\n  rw [← map_zsmul_add, zsmul_one]\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMapClass.map_int_add'",
+      "source_end": "10638",
+      "source_start": "10634",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMapClass.map_int_add'",
+      "source_end": "10638",
+      "source_start": "10634",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "10989",
+      "source_start": "10831",
+      "source_text": "theorem map_int_add [AddCommGroupWithOne G] [AddGroupWithOne H] [AddConstMapClass F G H 1 1]\n    (f : F) (n : ℤ) (x : G) : f (↑n + x) = f x + n := by simp\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "11202",
+      "source_start": "10991",
+      "source_text": "theorem map_fract {R : Type*} [Ring R] [LinearOrder R] [FloorRing R] [AddGroup H]\n    [FunLike F R H] [AddConstMapClass F R H 1 b] (f : F) (x : R) :\n    f (Int.fract x) = f x - ⌊x⌋ • b :=\n  map_sub_int' ..\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "13684",
+      "source_start": "11204",
+      "source_text": "open scoped Relator in\n/-- Auxiliary lemmas for the \"monotonicity on a fundamental interval implies monotonicity\" lemmas.\nWe formulate it for any relation so that the proof works both for `Monotone` and `StrictMono`. -/\nprotected theorem rel_map_of_Icc [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G]\n    [Archimedean G] [AddGroup H]\n    [AddConstMapClass F G H a b] {f : F} {R : H → H → Prop} [IsTrans H R]\n    [hR : CovariantClass H H (fun x y ↦ y + x) R] (ha : 0 < a) {l : G}\n    (hf : ∀ x ∈ Icc l (l + a), ∀ y ∈ Icc l (l + a), x < y → R (f x) (f y)) :\n    ((· < ·) ⇒ R) f f := fun x y hxy ↦ by\n  replace hR := hR.elim\n  have ha' : 0 ≤ a := ha.le\n  -- Shift both points by `m • a` so that `l ≤ x < l + a`\n  wlog hx : x ∈ Ico l (l + a) generalizing x y\n  · rcases existsUnique_sub_zsmul_mem_Ico ha x l with ⟨m, hm, -⟩\n    suffices R (f (x - m • a)) (f (y - m • a)) by simpa using hR (m • b) this\n    exact this _ _ (by simpa) hm\n  · -- Now find `n` such that `l + n • a < y ≤ l + (n + 1) • a`\n    rcases existsUnique_sub_zsmul_mem_Ioc ha y l with ⟨n, hny, -⟩\n    rcases lt_trichotomy n 0 with hn | rfl | hn\n    · -- Since `l ≤ x ≤ y`, the case `n < 0` is impossible\n      refine absurd ?_ hxy.not_ge\n      calc\n        y ≤ l + a + n • a := sub_le_iff_le_add.1 hny.2\n        _ = l + (n + 1) • a := by rw [add_comm n, add_smul, one_smul, add_assoc]\n        _ ≤ l + (0 : ℤ) • a := by gcongr; lia\n        _ ≤ x := by simpa using hx.1\n    · -- If `n = 0`, then `l < y ≤ l + a`, hence we can apply the assumption\n      exact hf x (Ico_subset_Icc_self hx) y (by simpa using Ioc_subset_Icc_self hny) hxy\n    · -- In the remaining case `0 < n` we use transitivity.\n      -- If `R = (· < ·)`, then the proof looks like\n      -- `f x < f (l + a) ≤ f (l + n • a) < f y`\n      trans f (l + (1 : ℤ) • a)\n      · grind\n      have hy : R (f (l + n • a)) (f y) := by\n        rw [← sub_add_cancel y (n • a), map_add_zsmul, map_add_zsmul]\n        refine hR _ <| hf _ ?_ _ (Ioc_subset_Icc_self hny) hny.1; simpa\n      rw [← Int.add_one_le_iff, zero_add] at hn\n      rcases hn.eq_or_lt with rfl | hn; · assumption\n      trans f (l + n • a)\n      · refine Int.rel_of_forall_rel_succ_of_lt R (f := (f <| l + · • a)) (fun k ↦ ?_) hn\n        simp_rw [add_comm k 1, add_zsmul, ← add_assoc, one_zsmul, map_add_zsmul]\n        refine hR (k • b) (hf _ ?_ _ ?_ ?_) <;> simpa\n      · assumption\n\n",
+      "syntax_kind": "Lean.Parser.Command.in"
+    },
+    {
+      "declaration": "",
+      "source_end": "11226",
+      "source_start": "11224",
+      "source_text": " section ",
+      "syntax_kind": "Lean.Parser.Command.section"
+    },
+    {
+      "declaration": "",
+      "source_end": "11223",
+      "source_start": "11204",
+      "source_text": "open scoped Relator ",
+      "syntax_kind": "Lean.Parser.Command.open"
+    },
+    {
+      "declaration": "",
+      "source_end": "",
+      "source_start": "",
+      "source_text": " end_local_scope  1 ",
+      "syntax_kind": "Lean.Parser.Command.InternalSyntax.end_local_scope"
+    },
+    {
+      "declaration": "",
+      "source_end": "13684",
+      "source_start": "11227",
+      "source_text": "/-- Auxiliary lemmas for the \"monotonicity on a fundamental interval implies monotonicity\" lemmas.\nWe formulate it for any relation so that the proof works both for `Monotone` and `StrictMono`. -/\nprotected theorem rel_map_of_Icc [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G]\n    [Archimedean G] [AddGroup H]\n    [AddConstMapClass F G H a b] {f : F} {R : H → H → Prop} [IsTrans H R]\n    [hR : CovariantClass H H (fun x y ↦ y + x) R] (ha : 0 < a) {l : G}\n    (hf : ∀ x ∈ Icc l (l + a), ∀ y ∈ Icc l (l + a), x < y → R (f x) (f y)) :\n    ((· < ·) ⇒ R) f f := fun x y hxy ↦ by\n  replace hR := hR.elim\n  have ha' : 0 ≤ a := ha.le\n  -- Shift both points by `m • a` so that `l ≤ x < l + a`\n  wlog hx : x ∈ Ico l (l + a) generalizing x y\n  · rcases existsUnique_sub_zsmul_mem_Ico ha x l with ⟨m, hm, -⟩\n    suffices R (f (x - m • a)) (f (y - m • a)) by simpa using hR (m • b) this\n    exact this _ _ (by simpa) hm\n  · -- Now find `n` such that `l + n • a < y ≤ l + (n + 1) • a`\n    rcases existsUnique_sub_zsmul_mem_Ioc ha y l with ⟨n, hny, -⟩\n    rcases lt_trichotomy n 0 with hn | rfl | hn\n    · -- Since `l ≤ x ≤ y`, the case `n < 0` is impossible\n      refine absurd ?_ hxy.not_ge\n      calc\n        y ≤ l + a + n • a := sub_le_iff_le_add.1 hny.2\n        _ = l + (n + 1) • a := by rw [add_comm n, add_smul, one_smul, add_assoc]\n        _ ≤ l + (0 : ℤ) • a := by gcongr; lia\n        _ ≤ x := by simpa using hx.1\n    · -- If `n = 0`, then `l < y ≤ l + a`, hence we can apply the assumption\n      exact hf x (Ico_subset_Icc_self hx) y (by simpa using Ioc_subset_Icc_self hny) hxy\n    · -- In the remaining case `0 < n` we use transitivity.\n      -- If `R = (· < ·)`, then the proof looks like\n      -- `f x < f (l + a) ≤ f (l + n • a) < f y`\n      trans f (l + (1 : ℤ) • a)\n      · grind\n      have hy : R (f (l + n • a)) (f y) := by\n        rw [← sub_add_cancel y (n • a), map_add_zsmul, map_add_zsmul]\n        refine hR _ <| hf _ ?_ _ (Ioc_subset_Icc_self hny) hny.1; simpa\n      rw [← Int.add_one_le_iff, zero_add] at hn\n      rcases hn.eq_or_lt with rfl | hn; · assumption\n      trans f (l + n • a)\n      · refine Int.rel_of_forall_rel_succ_of_lt R (f := (f <| l + · • a)) (fun k ↦ ?_) hn\n        simp_rw [add_comm k 1, add_zsmul, ← add_assoc, one_zsmul, map_add_zsmul]\n        refine hR (k • b) (hf _ ?_ _ ?_ ?_) <;> simpa\n      · assumption\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "11226",
+      "source_start": "11224",
+      "source_text": " end ",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "14112",
+      "source_start": "13686",
+      "source_text": "theorem monotone_iff_Icc [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G] [Archimedean G]\n    [AddCommGroup H] [PartialOrder H] [IsOrderedAddMonoid H]\n    [AddConstMapClass F G H a b] {f : F} (ha : 0 < a) (l : G) :\n    Monotone f ↔ MonotoneOn f (Icc l (l + a)) :=\n  ⟨(Monotone.monotoneOn · _), fun hf ↦ monotone_iff_forall_lt.2 <|\n    AddConstMapClass.rel_map_of_Icc ha fun _x hx _y hy hxy ↦ hf hx hy hxy.le⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "14425",
+      "source_start": "14114",
+      "source_text": "theorem antitone_iff_Icc [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G] [Archimedean G]\n    [AddCommGroup H] [PartialOrder H] [IsOrderedAddMonoid H]\n    [AddConstMapClass F G H a b] {f : F} (ha : 0 < a) (l : G) :\n    Antitone f ↔ AntitoneOn f (Icc l (l + a)) :=\n  monotone_iff_Icc (H := Hᵒᵈ) ha l\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "14780",
+      "source_start": "14427",
+      "source_text": "theorem strictMono_iff_Icc [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G] [Archimedean G]\n    [AddCommGroup H] [PartialOrder H] [IsOrderedAddMonoid H]\n    [AddConstMapClass F G H a b] {f : F} (ha : 0 < a) (l : G) :\n    StrictMono f ↔ StrictMonoOn f (Icc l (l + a)) :=\n  ⟨(StrictMono.strictMonoOn · _), AddConstMapClass.rel_map_of_Icc ha⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "15101",
+      "source_start": "14782",
+      "source_text": "theorem strictAnti_iff_Icc [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G] [Archimedean G]\n    [AddCommGroup H] [PartialOrder H] [IsOrderedAddMonoid H]\n    [AddConstMapClass F G H a b] {f : F} (ha : 0 < a) (l : G) :\n    StrictAnti f ↔ StrictAntiOn f (Icc l (l + a)) :=\n  strictMono_iff_Icc (H := Hᵒᵈ) ha l\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "15123",
+      "source_start": "15103",
+      "source_text": "end AddConstMapClass\n\n",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "15146",
+      "source_start": "15125",
+      "source_text": "open AddConstMapClass\n\n",
+      "syntax_kind": "Lean.Parser.Command.open"
+    },
+    {
+      "declaration": "",
+      "source_end": "15169",
+      "source_start": "15148",
+      "source_text": "namespace AddConstMap\n\n",
+      "syntax_kind": "Lean.Parser.Command.namespace"
+    },
+    {
+      "declaration": "",
+      "source_end": "15182",
+      "source_start": "15171",
+      "source_text": "section Add\n\n",
+      "syntax_kind": "Lean.Parser.Command.section"
+    },
+    {
+      "declaration": "",
+      "source_end": "15238",
+      "source_start": "15184",
+      "source_text": "variable {G H : Type*} [Add G] [Add H] {a : G} {b : H}\n\n",
+      "syntax_kind": "Lean.Parser.Command.variable"
+    },
+    {
+      "declaration": "",
+      "source_end": "15271",
+      "source_start": "15240",
+      "source_text": "/-!\n### Coercion to function\n-/\n\n",
+      "syntax_kind": "Lean.Parser.Command.moduleDoc"
+    },
+    {
+      "declaration": "",
+      "source_end": "15415",
+      "source_start": "15273",
+      "source_text": "@[macro_inline]\ninstance : FunLike (G →+c[a, b] H) G H where\n  coe := AddConstMap.toFun\n  coe_injective | ⟨_, _⟩, ⟨_, _⟩, rfl => rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instFunLike",
+      "source_end": "15287",
+      "source_start": "15275",
+      "source_text": "macro_inline",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap.instFunLike",
+      "source_end": "15287",
+      "source_start": "15275",
+      "source_text": "macro_inline",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "AddConstMap.instFunLike",
+      "source_end": "15415",
+      "source_start": "15273",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instFunLike",
+      "source_end": "15415",
+      "source_start": "15273",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "15513",
+      "source_start": "15417",
+      "source_text": "@[simp, push_cast] theorem coe_mk (f : G → H) (hf) : ⇑(mk f hf : G →+c[a, b] H) = f := rfl\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.coe_mk",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.coe_mk",
+      "source_end": "15423",
+      "source_start": "15419",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_mk",
+      "source_end": "15423",
+      "source_start": "15419",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_mk",
+      "source_end": "15434",
+      "source_start": "15425",
+      "source_text": "push_cast",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap.coe_mk",
+      "source_end": "15434",
+      "source_start": "15425",
+      "source_text": "push_cast",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "",
+      "source_end": "15580",
+      "source_start": "15514",
+      "source_text": "@[simp] theorem mk_coe (f : G →+c[a, b] H) : mk f f.2 = f := rfl\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.mk_coe",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.mk_coe",
+      "source_end": "15520",
+      "source_start": "15516",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.mk_coe",
+      "source_end": "15520",
+      "source_start": "15516",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "15652",
+      "source_start": "15581",
+      "source_text": "@[simp] theorem toFun_eq_coe (f : G →+c[a, b] H) : f.toFun = f := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.toFun_eq_coe",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.toFun_eq_coe",
+      "source_end": "15587",
+      "source_start": "15583",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.toFun_eq_coe",
+      "source_end": "15587",
+      "source_start": "15583",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "15751",
+      "source_start": "15654",
+      "source_text": "instance : AddConstMapClass (G →+c[a, b] H) G H a b where\n  map_add_const f := f.map_add_const'\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instAddConstMapClass",
+      "source_end": "15751",
+      "source_start": "15654",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instAddConstMapClass",
+      "source_end": "15751",
+      "source_start": "15654",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "15860",
+      "source_start": "15753",
+      "source_text": "@[ext] protected theorem ext {f g : G →+c[a, b] H} (h : ∀ x, f x = g x) : f = g :=\n  DFunLike.ext _ _ h\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.ext",
+      "source_end": "15758",
+      "source_start": "15755",
+      "source_text": "ext",
+      "syntax_kind": "Lean.Parser.Attr.ext"
+    },
+    {
+      "declaration": "AddConstMap.ext",
+      "source_end": "15758",
+      "source_start": "15755",
+      "source_text": "ext",
+      "syntax_kind": "ext"
+    },
+    {
+      "declaration": "",
+      "source_end": "15933",
+      "source_start": "15862",
+      "source_text": "initialize_simps_projections AddConstMap (toFun → coe, as_prefix coe)\n\n",
+      "syntax_kind": "Lean.Parser.Command.initialize_simps_projections"
+    },
+    {
+      "declaration": "",
+      "source_end": "15983",
+      "source_start": "15935",
+      "source_text": "/-!\n### Constructions about `G →+c[a, b] H`\n-/\n\n",
+      "syntax_kind": "Lean.Parser.Command.moduleDoc"
+    },
+    {
+      "declaration": "",
+      "source_end": "16115",
+      "source_start": "15985",
+      "source_text": "/-- The identity map as `G →+c[a, a] G`. -/\n@[simps -fullyApplied]\nprotected def id : G →+c[a, a] G := ⟨id, fun _ ↦ rfl⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.id",
+      "source_end": "16052",
+      "source_start": "16033",
+      "source_text": "simps -fullyApplied",
+      "syntax_kind": "Lean.Parser.Attr.simps"
+    },
+    {
+      "declaration": "AddConstMap.id",
+      "source_end": "16038",
+      "source_start": "16033",
+      "source_text": "simps ",
+      "syntax_kind": "simps"
+    },
+    {
+      "declaration": "",
+      "source_end": "16168",
+      "source_start": "16117",
+      "source_text": "instance : Inhabited (G →+c[a, a] G) := ⟨.id⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instInhabited",
+      "source_end": "16168",
+      "source_start": "16117",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instInhabited",
+      "source_end": "16168",
+      "source_start": "16117",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "16365",
+      "source_start": "16170",
+      "source_text": "/-- Composition of two `AddConstMap`s. -/\n@[simps -fullyApplied]\ndef comp {K : Type*} [Add K] {c : K} (g : H →+c[b, c] K) (f : G →+c[a, b] H) :\n    G →+c[a, c] K :=\n  ⟨g ∘ f, by simp⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.comp",
+      "source_end": "16233",
+      "source_start": "16214",
+      "source_text": "simps -fullyApplied",
+      "syntax_kind": "Lean.Parser.Attr.simps"
+    },
+    {
+      "declaration": "AddConstMap.comp",
+      "source_end": "16219",
+      "source_start": "16214",
+      "source_text": "simps ",
+      "syntax_kind": "simps"
+    },
+    {
+      "declaration": "",
+      "source_end": "16436",
+      "source_start": "16367",
+      "source_text": "@[simp] theorem comp_id (f : G →+c[a, b] H) : f.comp .id = f := rfl\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.comp_id",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.comp_id",
+      "source_end": "16373",
+      "source_start": "16369",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.comp_id",
+      "source_end": "16373",
+      "source_start": "16369",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "16507",
+      "source_start": "16437",
+      "source_text": "@[simp] theorem id_comp (f : G →+c[a, b] H) : .comp .id f = f := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.id_comp",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.id_comp",
+      "source_end": "16443",
+      "source_start": "16439",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.id_comp",
+      "source_end": "16443",
+      "source_start": "16439",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "16800",
+      "source_start": "16509",
+      "source_text": "/-- Change constants `a` and `b` in `(f : G →+c[a, b] H)` to improve definitional equalities. -/\n@[simps -fullyApplied]\ndef replaceConsts (f : G →+c[a, b] H) (a' b') (ha : a = a') (hb : b = b') :\n    G →+c[a', b'] H where\n  toFun := f\n  map_add_const' := ha ▸ hb ▸ f.map_add_const'\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.replaceConsts",
+      "source_end": "16629",
+      "source_start": "16610",
+      "source_text": "simps -fullyApplied",
+      "syntax_kind": "Lean.Parser.Attr.simps"
+    },
+    {
+      "declaration": "AddConstMap.replaceConsts",
+      "source_end": "16615",
+      "source_start": "16610",
+      "source_text": "simps ",
+      "syntax_kind": "simps"
+    },
+    {
+      "declaration": "",
+      "source_end": "16849",
+      "source_start": "16802",
+      "source_text": "/-!\n### Additive action on `G →+c[a, b] H`\n-/\n\n",
+      "syntax_kind": "Lean.Parser.Command.moduleDoc"
+    },
+    {
+      "declaration": "",
+      "source_end": "17072",
+      "source_start": "16851",
+      "source_text": "/-- If `f` is an `AddConstMap`, then so is `(c +ᵥ f ·)`. -/\ninstance {K : Type*} [VAdd K H] [VAddAssocClass K H H] : VAdd K (G →+c[a, b] H) :=\n  ⟨fun c f ↦ ⟨c +ᵥ ⇑f, fun x ↦ by simp [vadd_add_assoc]⟩⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instVAddOfVAddAssocClass",
+      "source_end": "17072",
+      "source_start": "16851",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instVAddOfVAddAssocClass",
+      "source_end": "17072",
+      "source_start": "16851",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "17228",
+      "source_start": "17074",
+      "source_text": "@[simp, norm_cast]\ntheorem coe_vadd {K : Type*} [VAdd K H] [VAddAssocClass K H H] (c : K) (f : G →+c[a, b] H) :\n    ⇑(c +ᵥ f) = c +ᵥ ⇑f :=\n  rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.coe_vadd",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.coe_vadd",
+      "source_end": "17091",
+      "source_start": "17082",
+      "source_text": "norm_cast",
+      "syntax_kind": "Lean.Parser.Attr.norm_cast"
+    },
+    {
+      "declaration": "AddConstMap.coe_vadd",
+      "source_end": "17091",
+      "source_start": "17082",
+      "source_text": "norm_cast",
+      "syntax_kind": "norm_cast"
+    },
+    {
+      "declaration": "AddConstMap.coe_vadd",
+      "source_end": "17080",
+      "source_start": "17076",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_vadd",
+      "source_end": "17080",
+      "source_start": "17076",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "17388",
+      "source_start": "17230",
+      "source_text": "instance {K : Type*} [AddMonoid K] [AddAction K H] [VAddAssocClass K H H] :\n    AddAction K (G →+c[a, b] H) :=\n  DFunLike.coe_injective.addAction _ coe_vadd\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instAddActionOfVAddAssocClass",
+      "source_end": "17388",
+      "source_start": "17230",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instAddActionOfVAddAssocClass",
+      "source_end": "17388",
+      "source_start": "17230",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "17452",
+      "source_start": "17390",
+      "source_text": "/-!\n### Monoid structure on endomorphisms `G →+c[a, a] G`\n-/\n\n",
+      "syntax_kind": "Lean.Parser.Command.moduleDoc"
+    },
+    {
+      "declaration": "",
+      "source_end": "17500",
+      "source_start": "17454",
+      "source_text": "instance : Mul (G →+c[a, a] G) := ⟨comp⟩\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instMul",
+      "source_end": "17500",
+      "source_start": "17454",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instMul",
+      "source_end": "17500",
+      "source_start": "17454",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "17546",
+      "source_start": "17501",
+      "source_text": "instance : One (G →+c[a, a] G) := ⟨.id⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instOne",
+      "source_end": "17546",
+      "source_start": "17501",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instOne",
+      "source_end": "17546",
+      "source_start": "17501",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "17669",
+      "source_start": "17548",
+      "source_text": "instance : Pow (G →+c[a, a] G) ℕ where\n  pow f n := ⟨f^[n], Commute.iterate_left (AddConstMapClass.semiconj f) _⟩\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instPowNat",
+      "source_end": "17669",
+      "source_start": "17548",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instPowNat",
+      "source_end": "17669",
+      "source_start": "17548",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "17806",
+      "source_start": "17671",
+      "source_text": "instance : Monoid (G →+c[a, a] G) :=\n  DFunLike.coe_injective.monoid (M₂ := Function.End G) _ rfl (fun _ _ ↦ rfl) fun _ _ ↦ rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.instMonoid",
+      "source_end": "17806",
+      "source_start": "17671",
+      "source_text": " instance  1000 ",
+      "syntax_kind": "Lean.Parser.Attr.instance"
+    },
+    {
+      "declaration": "AddConstMap.instMonoid",
+      "source_end": "17806",
+      "source_start": "17671",
+      "source_text": " instance ",
+      "syntax_kind": "instance"
+    },
+    {
+      "declaration": "",
+      "source_end": "17873",
+      "source_start": "17808",
+      "source_text": "theorem mul_def (f g : G →+c[a, a] G) : f * g = f.comp g := rfl\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.mul_def",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "",
+      "source_end": "17962",
+      "source_start": "17874",
+      "source_text": "@[simp, push_cast] theorem coe_mul (f g : G →+c[a, a] G) : ⇑(f * g) = f ∘ g := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.coe_mul",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.coe_mul",
+      "source_end": "17880",
+      "source_start": "17876",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_mul",
+      "source_end": "17880",
+      "source_start": "17876",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_mul",
+      "source_end": "17891",
+      "source_start": "17882",
+      "source_text": "push_cast",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap.coe_mul",
+      "source_end": "17891",
+      "source_start": "17882",
+      "source_text": "push_cast",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "",
+      "source_end": "18016",
+      "source_start": "17964",
+      "source_text": "theorem one_def : (1 : G →+c[a, a] G) = .id := rfl\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.one_def",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "",
+      "source_end": "18090",
+      "source_start": "18017",
+      "source_text": "@[simp, push_cast] theorem coe_one : ⇑(1 : G →+c[a, a] G) = id := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.coe_one",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.coe_one",
+      "source_end": "18023",
+      "source_start": "18019",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_one",
+      "source_end": "18023",
+      "source_start": "18019",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_one",
+      "source_end": "18034",
+      "source_start": "18025",
+      "source_text": "push_cast",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap.coe_one",
+      "source_end": "18034",
+      "source_start": "18025",
+      "source_text": "push_cast",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "",
+      "source_end": "18186",
+      "source_start": "18092",
+      "source_text": "@[simp, push_cast] theorem coe_pow (f : G →+c[a, a] G) (n : ℕ) : ⇑(f ^ n) = f^[n] := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.coe_pow",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.coe_pow",
+      "source_end": "18098",
+      "source_start": "18094",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_pow",
+      "source_end": "18098",
+      "source_start": "18094",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "AddConstMap.coe_pow",
+      "source_end": "18109",
+      "source_start": "18100",
+      "source_text": "push_cast",
+      "syntax_kind": "Lean.Parser.Attr.simple"
+    },
+    {
+      "declaration": "AddConstMap.coe_pow",
+      "source_end": "18109",
+      "source_start": "18100",
+      "source_text": "push_cast",
+      "syntax_kind": "ident"
+    },
+    {
+      "declaration": "",
+      "source_end": "18274",
+      "source_start": "18188",
+      "source_text": "theorem pow_apply (f : G →+c[a, a] G) (n : ℕ) (x : G) : (f ^ n) x = f^[n] x := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.pow_apply",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "",
+      "source_end": "18493",
+      "source_start": "18276",
+      "source_text": "/-- Coercion to functions as a monoid homomorphism to `Function.End G`. -/\n@[simps -fullyApplied]\ndef toEnd : (G →+c[a, a] G) →* Function.End G where\n  toFun := DFunLike.coe\n  map_mul' _ _ := rfl\n  map_one' := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.toEnd",
+      "source_end": "18372",
+      "source_start": "18353",
+      "source_text": "simps -fullyApplied",
+      "syntax_kind": "Lean.Parser.Attr.simps"
+    },
+    {
+      "declaration": "AddConstMap.toEnd",
+      "source_end": "18358",
+      "source_start": "18353",
+      "source_text": "simps ",
+      "syntax_kind": "simps"
+    },
+    {
+      "declaration": "",
+      "source_end": "18502",
+      "source_start": "18495",
+      "source_text": "end Add\n\n",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "18524",
+      "source_start": "18504",
+      "source_text": "section AddZeroClass\n\n",
+      "syntax_kind": "Lean.Parser.Command.section"
+    },
+    {
+      "declaration": "",
+      "source_end": "18591",
+      "source_start": "18526",
+      "source_text": "variable {G H K : Type*} [Add G] [AddZeroClass H] {a : G} {b : H}\n\n",
+      "syntax_kind": "Lean.Parser.Command.variable"
+    },
+    {
+      "declaration": "",
+      "source_end": "18951",
+      "source_start": "18593",
+      "source_text": "/-!\n### Multiplicative action on `(b : H) × (G →+c[a, b] H)`\n\nIf `K` acts distributively on `H`, then for each `f : G →+c[a, b] H`\nwe define `(AddConstMap.smul c f : G →+c[a, c • b] H)`.\n\nOne can show that this defines a multiplicative action of `K` on `(b : H) × (G →+c[a, b] H)`\nbut we don't do this at the moment because we don't need this.\n-/\n\n",
+      "syntax_kind": "Lean.Parser.Command.moduleDoc"
+    },
+    {
+      "declaration": "",
+      "source_end": "19223",
+      "source_start": "18953",
+      "source_text": "/-- Pointwise scalar multiplication of `f : G →+c[a, b] H` as a map `G →+c[a, c • b] H`. -/\n@[simps -fullyApplied]\ndef smul [DistribSMul K H] (c : K) (f : G →+c[a, b] H) : G →+c[a, c • b] H where\n  toFun := c • ⇑f\n  map_add_const' x := by simp [smul_add]\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.smul",
+      "source_end": "19072",
+      "source_start": "19053",
+      "source_text": "simps -fullyApplied",
+      "syntax_kind": "Lean.Parser.Attr.simps"
+    },
+    {
+      "declaration": "AddConstMap.smul",
+      "source_end": "19058",
+      "source_start": "19053",
+      "source_text": "simps ",
+      "syntax_kind": "simps"
+    },
+    {
+      "declaration": "",
+      "source_end": "19241",
+      "source_start": "19225",
+      "source_text": "end AddZeroClass\n\n",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "19260",
+      "source_start": "19243",
+      "source_text": "section AddMonoid\n\n",
+      "syntax_kind": "Lean.Parser.Command.section"
+    },
+    {
+      "declaration": "",
+      "source_end": "19304",
+      "source_start": "19262",
+      "source_text": "variable {G : Type*} [AddMonoid G] {a : G}\n\n",
+      "syntax_kind": "Lean.Parser.Command.variable"
+    },
+    {
+      "declaration": "",
+      "source_end": "19626",
+      "source_start": "19306",
+      "source_text": "/-- The map that sends `c` to a translation by `c`\nas a monoid homomorphism from `Multiplicative G` to `G →+c[a, a] G`. -/\n@[simps! -fullyApplied]\ndef addLeftHom : Multiplicative G →* (G →+c[a, a] G) where\n  toFun c := c.toAdd +ᵥ .id\n  map_one' := by ext; apply zero_add\n  map_mul' _ _ := by ext; apply add_assoc\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.addLeftHom",
+      "source_end": "19453",
+      "source_start": "19433",
+      "source_text": " simps  ! -fullyApplied",
+      "syntax_kind": "Lean.Parser.Attr.simps"
+    },
+    {
+      "declaration": "AddConstMap.addLeftHom",
+      "source_end": "19453",
+      "source_start": "19433",
+      "source_text": " simps ",
+      "syntax_kind": "simps"
+    },
+    {
+      "declaration": "",
+      "source_end": "19641",
+      "source_start": "19628",
+      "source_text": "end AddMonoid\n\n",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "19663",
+      "source_start": "19643",
+      "source_text": "section AddCommGroup\n\n",
+      "syntax_kind": "Lean.Parser.Command.section"
+    },
+    {
+      "declaration": "",
+      "source_end": "19737",
+      "source_start": "19665",
+      "source_text": "variable {G H : Type*} [AddCommGroup G] [AddCommGroup H] {a : G} {b : H}\n\n",
+      "syntax_kind": "Lean.Parser.Command.variable"
+    },
+    {
+      "declaration": "",
+      "source_end": "20033",
+      "source_start": "19739",
+      "source_text": "/-- If `f : G → H` is an `AddConstMap`, then so is `fun x ↦ -f (-x)`. -/\n@[simps! apply_coe]\ndef conjNeg : (G →+c[a, b] H) ≃ (G →+c[a, b] H) :=\n  Involutive.toPerm (fun f ↦ ⟨fun x ↦ - f (-x), fun _ ↦ by simp [neg_add_eq_sub]⟩) fun _ ↦\n    AddConstMap.ext fun _ ↦ by simp\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.conjNeg",
+      "source_end": "19834",
+      "source_start": "19818",
+      "source_text": " simps  ! apply_coe",
+      "syntax_kind": "Lean.Parser.Attr.simps"
+    },
+    {
+      "declaration": "AddConstMap.conjNeg",
+      "source_end": "19834",
+      "source_start": "19818",
+      "source_text": " simps ",
+      "syntax_kind": "simps"
+    },
+    {
+      "declaration": "",
+      "source_end": "20115",
+      "source_start": "20035",
+      "source_text": "@[simp] theorem conjNeg_symm : (conjNeg (a := a) (b := b)).symm = conjNeg := rfl\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "AddConstMap.conjNeg_symm",
+      "source_end": "",
+      "source_start": "",
+      "source_text": "",
+      "syntax_kind": "missing"
+    },
+    {
+      "declaration": "AddConstMap.conjNeg_symm",
+      "source_end": "20041",
+      "source_start": "20037",
+      "source_text": "simp",
+      "syntax_kind": "Lean.Parser.Attr.simp"
+    },
+    {
+      "declaration": "AddConstMap.conjNeg_symm",
+      "source_end": "20041",
+      "source_start": "20037",
+      "source_text": "simp",
+      "syntax_kind": "simp"
+    },
+    {
+      "declaration": "",
+      "source_end": "20133",
+      "source_start": "20117",
+      "source_text": "end AddCommGroup\n\n",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "20152",
+      "source_start": "20135",
+      "source_text": "section FloorRing\n\n",
+      "syntax_kind": "Lean.Parser.Command.section"
+    },
+    {
+      "declaration": "",
+      "source_end": "20262",
+      "source_start": "20154",
+      "source_text": "variable {R G : Type*} [Ring R] [LinearOrder R] [IsStrictOrderedRing R] [FloorRing R] [AddGroup G]\n  (a : G)\n\n",
+      "syntax_kind": "Lean.Parser.Command.variable"
+    },
+    {
+      "declaration": "",
+      "source_end": "20710",
+      "source_start": "20264",
+      "source_text": "/-- A map `f : R →+c[1, a] G` is defined by its values on `Set.Ico 0 1`. -/\ndef mkFract : (Ico (0 : R) 1 → G) ≃ (R →+c[1, a] G) where\n  toFun f := ⟨fun x ↦ f ⟨Int.fract x, Int.fract_nonneg _, Int.fract_lt_one _⟩ + ⌊x⌋ • a, fun x ↦ by\n    simp [add_one_zsmul, add_assoc]⟩\n  invFun f x := f x\n  left_inv _ := by ext x; simp [Int.fract_eq_self.2 x.2, Int.floor_eq_zero_iff.2 x.2]\n  right_inv f := by ext x; simp [map_fract]\n\n",
+      "syntax_kind": "Lean.Parser.Command.declaration"
+    },
+    {
+      "declaration": "",
+      "source_end": "20725",
+      "source_start": "20712",
+      "source_text": "end FloorRing\n\n",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "20742",
+      "source_start": "20727",
+      "source_text": "end AddConstMap\n",
+      "syntax_kind": "Lean.Parser.Command.end"
+    },
+    {
+      "declaration": "",
+      "source_end": "20743",
+      "source_start": "20743",
+      "source_text": "",
+      "syntax_kind": "Lean.Parser.Command.eoi"
+    }
+  ],
   "tactic_nodes": 1120,
+  "command_nodes": 264,
   "completed_nodes": 771
 }
