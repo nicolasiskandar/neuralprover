@@ -1,5 +1,74 @@
 # Experiment log
 
+- Kernel-checked search evaluation (`evaluate`) on the 2-row Mathlib replay test set (`data/mathlib-200/processed/test.jsonl`) with default search settings (20 nodes, width 4): base 0/2 (Wilson [0, 0.658], 1.0 node/3.0 calls, 6 invalid tactics), LoRA adapter 0/2 (1.5 nodes/6.0 calls, 11 invalid tactics). On this tiny test set there is no proof-solving gain; this is not evidence of general performance.
+
+## 2026-10-24 — one-epoch LoRA on the 200-file InfoTree corpus (full held-out eval)
+
+- Trained `HuggingFaceTB/SmolLM2-135M` (revision `4e53f736cbb20a9a0f56b4c4bf378d9f306ff915`) with LoRA on `data/mathlib-info-tree-200/processed/train.jsonl` for 1 epoch on CPU. Output: `experiments/mathlib-info-tree-lora-200-1epoch-canonical/`. Training used the canonical prompt, `--goal-scope proof` (dropped 788 focus + 25 conv rows; 3,976 proof rows trained), `--max-steps -1` (full epoch, not a budget), and seed 17.
+- The run reached `global_step` 3976 with `epoch` 1.0, so the epoch completed; `adapter_model.safetensors` in the output directory is byte-identical to the one in `checkpoint-3976` (SHA-256 `346854e4fbe9ba7cf974f228936c66ad9ba680b6cf392ab0055eb422fd5dbceb`, 1,858,776 bytes). The logged training loss averages 2.7458 over the 795 five-step log intervals (first logged value 5.1834 at step 5, last 3.1389 at step 3975, minimum 1.1420). The wall-clock runtime was written only to a transient log that is no longer available, so it is not recorded here rather than being estimated.
+- Full held-out tactic prediction (`evaluate-tactics` on `data/mathlib-info-tree-200/examples.jsonl`, seed `neuralproof-mathlib-info-tree-v1`, `--limit 342`): 446 held-out rows, 33 excluded as non-tactic targets, 71 excluded as focus-scope, 342 eligible. Base: 0/342 exact matches (0.0 %), 157 silent predictions, Wilson 95 % CI [0.0, 0.0111], 1,239.4 s of inference. LoRA: 21/342 exact matches (6.14 %), 0 silent predictions, Wilson 95 % CI [0.0405, 0.0920], 416.7 s of inference. Both models were evaluated greedily (top-1) on the identical sample using the canonical prompt and the echo-aware completion boundary. Result file: `experiments/mathlib-info-tree-lora-200-1epoch-canonical/tactic-eval-full-heldout.json`.
+- What this does and does not establish: the adapter learns the output format and produces a tactic on every row, and it matches the source tactic exactly on 6.14 % of held-out rows against 0 % for the base model — the two Wilson intervals do not overlap. That is evidence that one epoch of LoRA moves a held-out tactic-prediction metric on this corpus. It is not a proof-solving result: exact string match on single-line source tactics is a diagnostic, the corpus contexts have not been independently replayed, and no theorem was proved by either model in this pass.
+
+## 2026-10-21 — the test suite moves to pytest
+
+- The suite is now `pytest` 9.1.1, installed into `.venv` with `uv pip install --python .venv/bin/python pytest`. The install adds only `pytest`, `pluggy`, `iniconfig` and `pygments`; `torch 2.6.0+cpu`, `transformers 4.49.0` and `peft 0.14.0` are unchanged, which was verified before and after.
+- The eleven `unittest` modules were ported to plain functions, fixtures, `pytest.raises`, `pytest.approx`, `tmp_path` and `monkeypatch`. The port is mechanical: no production behaviour changed, and all 77 original cases still pass in the new form. The command `python -m unittest discover -s tests -v` no longer collects the suite, so every reference to it was updated (`AGENTS.md`, `README.md`, `docs/reproducibility.md`, `reports/research-draft.md`).
+- The suite grew from 77 cases to 247: 223 cases that need no Lean toolchain and 24 that invoke it.
+- Configuration lives in `pyproject.toml`: `testpaths = ["tests"]`, `--strict-markers`, `xfail_strict = true`, and the markers `lean` (needs the pinned toolchain), `corpus` (needs a corpus under `data/`), `model` (needs torch, transformers and a local model cache) and `slow`. `pytest -m "not lean"` runs the part that needs no Lean in about a minute; `pytest -m lean` runs the part that does. A `test` extra (`pytest==9.1.1`) was added to the project metadata.
+- `tests/conftest.py` holds the shared fixtures and forces `HF_HUB_OFFLINE=1`/`TRANSFORMERS_OFFLINE=1` for the whole session, so a test cannot silently depend on a network round trip.
+
+### What the new tests cover
+
+- `tests/test_predictor.py` (new): the Hugging Face decoding path against a stand-in tokenizer and model — the tactic that reaches the caller, an echo-only completion producing no candidate, a tactic found after an echo, `temperature` present only when sampling, the bounded generation, the canonical prompt, the revision, and the adapter load. This is the code path that the earlier 0/50 result turned on.
+- `tests/test_benchmark.py` (new): the benchmark runner and its counters — a verified theorem, the invalid-tactic and timeout counts, the summary and CSV that are written next to the results, and the row without a theorem header that stops the run.
+- `tests/test_replay_corpus.py` (new): the resumable replay — a replayed row, a row the current trace does not contain, a file that fails, the argument checks, the manifest digest, and the resume that refuses a changed manifest.
+- `tests/test_normalize_info_tree.py` (new): the normalizer and every exclusion counter — a missing span, an invalid range, an empty source range, a wrapper node, a node outside any proof, a node owned by two proofs, and the deduplication of two nodes on one span.
+- `tests/test_provenance.py` (new): the digests, the working-tree state, the manifest, and the rule that the code digest covers untracked files and staged changes.
+- `tests/test_corpus_invariants.py` (new): the invariants of the generated corpora on disk — no processed row has a target that is not a tactic, no source file is in two splits, every processed prompt is the canonical prompt, and each manifest still describes the files it names.
+- The existing modules gained the cases that were missing: the exclusion counters of the tactic metric (`excluded_focus_scope`, multi-line targets, the arithmetic that accounts for every held-out row), the Wilson interval at its edges, the scope filter of the trainer, the `evaluate` command's exit code, the argument checks of both corpus builders, and the failure records of the narrow extractor.
+
+## 2026-10-21 — measurement repair: completion boundary, label cleanup, and the training step budget
+
+- The 0/50 held-out result recorded on 2026-10-19 was a harness artifact, not a model result. This entry records what was wrong, what the corrected measurement says, and what is still unknown. No theorem was proved in this pass and the tactic-prediction numbers below are not proof-solving results.
+
+### Why the 0/50 was an artifact
+
+- The mined prompt ended with `Proof state:\n\n<state>`: the canonicalization of the goal state had not been applied yet, so the mined rows carried a blank line between the label and the state. The base model mirrors the structure it is shown. On the pre-canonical prompt the first line of the completion was empty in 12 of 12 sampled completions; on the canonical prompt it was empty in 0 of 12.
+- The 100-step adapter was trained on that same pre-canonical prompt and learned the same shape: it emitted a leading blank line in 6 of 6 completions on the format it was trained on.
+- The harness took the first line of the completion as the tactic. The model's silence was therefore recorded as a wrong tactic, and the run reported 0/50 without saying that the model had not answered at all.
+- Six prompt variants were tried against the base model (current, no trailing newline, "The next tactic is:", a markdown header, an arrow, "Tactic: "). The base model produced no tactic in any of them: the completions were proof-state echoes, prose, or numbers. The base model is not the subject of the fine-tuning hypothesis, so this is recorded as a property of the baseline, not as evidence about adaptation.
+
+### N1 — completion boundary and candidate extraction
+
+- Added `neuralproof/models/tactics.py`. A completion is scanned line by line and the first line that is not an echo of the prompt is the tactic: a blank line, a `case` header, a local-context binder (`x : M`), a goal marker (`⊢ ` or `| `), and the prompt's own labels (`Context:`, `Proof state:`, `Next tactic:`, `Tactic:`) are skipped. The filter is a budget saver, not a correctness claim; a line that passes it is still only a candidate and Lean decides whether it is valid.
+- `load_hf_predictor` now drops an empty extraction rather than returning it, so an empty candidate never reaches Lean. `temperature` is only passed when sampling, since transformers ignores it under greedy decoding.
+- `best_first` rejects an empty candidate before spending a Lean call, counts it in `SearchResult.rejected_candidates`, and records `{"rejected": "empty candidate"}` in the trace.
+- `evaluate_tactic_prediction` reports `silent_predictions` next to `exact_matches`, and records `produced_output` per example. A run in which the model said nothing is now distinguishable from a run in which the model answered wrongly.
+
+### N2 — labels that are not tactics
+
+- The InfoTree driver records parser fragments as tactic nodes. 246 of the 6,221 mined rows have a target no tactic can produce: `by` (101, the `by` of a declaration header), `where` (58, the `where` of a structure instance), `{` (56, a term brace), `‹_›` (23, a placeholder), `(` (4), `.` (2), `1` (1), `2` (1). Every one of them carries a `Lean.Parser.Tactic.*` syntax kind, so the syntax kind does not identify them.
+- One shared rule, `is_tactic_target` in `neuralproof/data/preprocessing.py`, is used by both preprocessing and the evaluation: a target must contain a letter and must not be `by` or `where`. Preprocessing records `excluded_non_tactic_targets`; the metric records the same count. The held-out set goes from 446 to 413 rows with a tactic target.
+- Regenerated all four processed sets: `data/processed` 2/0/0, `data/mathlib-200/processed` 22/1/2, `data/validated/nat-basic-processed` 40/0/0, `data/mathlib-info-tree-200/processed` 4,789/773/413 with 246 rows excluded and every row stamped `validation_status: unreplayed`.
+
+### Scope consistency between training and inference
+
+- 1,050 mined rows record a focus-local or conversion goal state, which is not the proof-global goal list the live client reports. Training and scoring now both restrict to the `proof` scope, so the model is trained and measured on the distribution it is used on. The train split keeps 3,976 of 4,789 rows; the held-out set goes from 413 rows with a tactic target to 342 proof-scope rows.
+
+### The corrected measurement
+
+- `neuralproof evaluate-tactics` on the same deterministic 50 held-out rows, canonical prompt, cleaned labels, proof scope only: base 0/50 exact matches with 22 silent predictions, LoRA 0/50 with 2 silent predictions (Wilson 95% [0, 0.07135] for either rate). The run is still a negative result, but it is now a statement about the model: the base model echoed proof state and identifiers, and the 100-step adapter mostly emitted the word `proof`. Neither produced the source tactic labels.
+- The 100-step adapter is 2 % of one epoch and was trained on the superseded prompt format, so it is out of distribution under the canonical prompt. It is not evidence about a properly trained adapter.
+
+### The training step budget was silently truncating every run
+
+- `TrainingArguments` reads any non-negative `max_steps` as a hard limit and stops when `global_step >= max_steps`. The trainer's default of `0` therefore ended every unbounded run after its first step: a full-epoch request reported 1 step in 3.2 seconds and looked finished. The default is now `-1`, the transformers value that lets the epoch count decide the length, and a budget of `0` is rejected with an explicit message.
+- This is a harness defect that produced a plausible-looking result, recorded here because a run that stops early is otherwise indistinguishable from a run that learned quickly.
+
+### Test outcome
+
+- `python -m unittest discover -s tests -v` is green after these changes: 77 tests, all passed in 247.6 seconds. New regression tests cover the echo filter against the observed raw completions, the rejection of empty candidates in search, the separation of silent predictions from wrong tactics, the exclusion of non-tactic targets, the rejection of a zero step budget, and the `evaluate` command's handling of a row without a theorem header.
+
 ## 2026-10-21 — correctness pass: error detection, goal-state form, split integrity, artifact provenance
 
 - Fixed four correctness findings in the Lean client, the data pipeline, and the generated artifacts. No new theorem was proved and no model metric was recomputed in this pass; the numbers below are pipeline facts, not proof-solving results.

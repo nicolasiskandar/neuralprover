@@ -26,7 +26,7 @@ The current source parser excludes common Lean syntax. The replay backend incurs
 
 ## Reproducibility
 
-See `docs/reproducibility.md` and `experiments/log.md`. Re-run the Lean smoke checks with `python3 -m unittest discover -s tests -v`.
+See `docs/reproducibility.md` and `experiments/log.md`. Re-run the Lean smoke checks with `pytest` (or `pytest -m lean` for the cases that invoke the toolchain).
 
 ## References
 

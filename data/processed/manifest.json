@@ -2,9 +2,9 @@
   "schema_version": 1,
   "artifact": "processed_tactic_rows",
   "command": "python -m neuralproof.cli preprocess --input data/raw/sample.jsonl --output data/processed",
-  "code_revision": "27e2d01b49b062a27c503c53ea055d6c873d140a",
+  "code_revision": "8ae7f70b2fbb2411ea0da522895046eda877a78c",
   "code_state": "dirty",
-  "code_diff_sha256": "b8bad8d6e834662249d5882f0fe4c12f48237072ff844c8115eb68a0e665d4b4",
+  "code_diff_sha256": "8dfe99934a05782edb0fd88eb31420ed9052af3c161bdbcdf2f2563141dbf9c5",
   "split_seed": "neuralproof-v1",
   "input": {
     "path": "data/raw/sample.jsonl",
@@ -34,6 +34,7 @@
     "test": 0
   },
   "excluded_unvalidated": 0,
+  "excluded_non_tactic_targets": 0,
   "include_unvalidated": false,
   "split_disagreements": 0,
   "goal_scope_counts": {
@@ -44,8 +45,10 @@
   },
   "validation_policy": "rows are included only when validation is replayed, declaration_replayed, or absent; --include-unvalidated keeps the rest and stamps them unreplayed",
   "goal_scope_policy": "proof = mined state is the proof-global goal list; focus = mined inside a tactic focus; conv = mined conv subgoal",
+  "label_policy": "rows whose target is not a tactic (the `by` of a header, the `where` of a structure instance, a brace, a placeholder) are excluded; no tactic can answer them",
   "caveats": [
     "rows marked validation_status=unreplayed were never replayed by Lean and are not verified proofs",
-    "rows marked goal_scope=focus were mined inside a tactic focus and do not match the proof-global state the live client reports"
+    "rows marked goal_scope=focus were mined inside a tactic focus and do not match the proof-global state the live client reports",
+    "code_diff_sha256 is taken before this manifest is written, and the manifest is itself a tracked file, so the digest identifies the code and inputs that produced the rows and not the tree that includes this manifest"
   ]
 }

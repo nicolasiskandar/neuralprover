@@ -57,15 +57,31 @@ def working_tree_state() -> str:
 
 
 def code_diff_sha256() -> str | None:
-    """Digest of the uncommitted patch, so a dirty tree is still identifiable."""
+    """Digest of the uncommitted patch, so a dirty tree is still identifiable.
+
+    `git diff` does not mention untracked files, but a new module that the
+    artifact depends on is part of the code that produced it.  Untracked
+    files are therefore folded into the digest by path and content, so the
+    manifest describes the tree as it is and not only the tracked part of it.
+    """
     try:
-        proc = subprocess.run(["git", "diff", "HEAD"], capture_output=True,
-                              text=True, timeout=30)
+        patch = subprocess.run(["git", "diff", "HEAD"], capture_output=True,
+                               text=True, timeout=30)
+        status = subprocess.run(["git", "status", "--porcelain", "-uall"],
+                                capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return None
-    if proc.returncode != 0:
+    if patch.returncode != 0 or status.returncode != 0:
         return None
-    return sha256_text(proc.stdout)
+    digest = hashlib.sha256()
+    digest.update(patch.stdout.encode("utf-8"))
+    for line in status.stdout.splitlines():
+        if not line.startswith("?? "):
+            continue
+        path = line[3:].strip().strip('"')
+        digest.update(b"\0untracked\0" + path.encode("utf-8") + b"\0")
+        digest.update((sha256_file(path) or "").encode("utf-8"))
+    return digest.hexdigest()
 
 
 def current_command() -> str:

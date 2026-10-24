@@ -11,6 +11,27 @@ from neuralproof.models.prompt import format_tactic_prompt
 SPLITS = ("train", "validation", "test")
 # Validation markers that mean the row was replayed by Lean.
 REPLAYED = {"replayed", "declaration_replayed"}
+# Targets that the InfoTree driver captured but that are not tactics: the
+# `by` of a declaration header, the `where` of a structure instance, and
+# the brace of a term.  They are recorded as parser nodes with a source span,
+# but no tactic can answer them.
+NON_TACTIC_TARGETS = {"by", "where"}
+
+
+def is_tactic_target(target: str) -> bool:
+    """True when the row's target is a tactic the model could produce.
+
+    Every Lean tactic names something, so a target without a letter is a
+    parser fragment or a placeholder (`{`, `(`, `‹_›`, `1`).  `by` and
+    `where` are keywords of a declaration and of a structure instance, not
+    tactics.
+    """
+    text = str(target).strip()
+    if not text:
+        return False
+    if text in NON_TACTIC_TARGETS:
+        return False
+    return any(character.isalpha() for character in text)
 
 
 @dataclass(frozen=True)
@@ -19,6 +40,7 @@ class PreparedDataset:
 
     groups: dict[str, list[dict[str, Any]]]
     excluded_unvalidated: int = 0
+    excluded_non_tactic_targets: int = 0
     split_disagreements: int = 0
     goal_scope_counts: dict[str, int] = field(default_factory=dict)
     validation_status_counts: dict[str, int] = field(default_factory=dict)
@@ -103,9 +125,15 @@ def prepare_dataset(rows: list[dict[str, Any]], *, seed: str = "neuralproof-v1",
     `include_unvalidated` they are kept and stamped `validation_status:
     "unreplayed"`, so a dataset built from unreplayed contexts stays visible
     instead of passing as validated data.
+
+    Rows whose target is not a tactic are excluded: the InfoTree driver
+    records parser fragments such as the `by` of a declaration header as
+    tactic nodes, and training on them teaches the model to answer with a
+    keyword that closes no goal.
     """
     groups: dict[str, list[dict[str, Any]]] = {name: [] for name in SPLITS}
     excluded = 0
+    excluded_targets = 0
     disagreements = 0
     scopes = classify_goal_scope(rows)
     scope_counts: dict[str, int] = {}
@@ -114,6 +142,9 @@ def prepare_dataset(rows: list[dict[str, Any]], *, seed: str = "neuralproof-v1",
         status = _validation_status(original)
         if status == "unreplayed" and not include_unvalidated:
             excluded += 1
+            continue
+        if not is_tactic_target(original.get("target_tactic", "")):
+            excluded_targets += 1
             continue
         row = dict(original)
         source_file = str(row.get("source_file", ""))
@@ -132,6 +163,7 @@ def prepare_dataset(rows: list[dict[str, Any]], *, seed: str = "neuralproof-v1",
         row["prompt"] = format_tactic_prompt(row["context"], row["goal_state"])
         groups[row["split"]].append(row)
     return PreparedDataset(groups=groups, excluded_unvalidated=excluded,
+                            excluded_non_tactic_targets=excluded_targets,
                             split_disagreements=disagreements,
                             goal_scope_counts=scope_counts,
                             validation_status_counts=status_counts, split_seed=seed,

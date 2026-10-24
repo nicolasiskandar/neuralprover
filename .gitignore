@@ -6,3 +6,14 @@ data/cache/
 data/mathlib-info-tree-*/
 checkpoints/
 experiments/mathlib-info-tree-lora-*/
+# Trainer artifacts are reproducible from the pinned model revision: the
+# adapter weights, the optimizer/scheduler/rng state, and the tokenizer copy.
+# The run's own description (README, adapter_config, trainer_state) stays
+# tracked so the experiment remains documented.
+experiments/**/adapter_model.safetensors
+experiments/**/optimizer.pt
+experiments/**/rng_state.pth
+experiments/**/scheduler.pt
+experiments/**/tokenizer.json
+experiments/**/vocab.json
+experiments/**/merges.txt

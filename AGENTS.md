@@ -4,13 +4,13 @@
 
 - `neuralproof/` contains the Python CLI and the data, Lean-client, model, search, and evaluation modules.
 - `lean/` is the pinned Lean 4 and Mathlib project; the toolchain and dependency lock are in `lean/lean-toolchain` and `lean/lake-manifest.json`.
-- `tests/` contains Python `unittest` coverage, including tests that invoke real Lean and Mathlib.
+- `tests/` contains the `pytest` suite, including tests that invoke real Lean and Mathlib.
 - `configs/` stores experiment settings; `docs/` describes methods and reproducibility; `experiments/log.md` records actual runs.
 - `data/` and `experiments/` may contain generated corpora and model artifacts. Do not commit large generated datasets or checkpoints.
 
 ## Build, Test, and Run
 
-- `python -m unittest discover -s tests -v` runs the full test suite.
+- `pytest` runs the full test suite; `pytest -m "not lean"` runs the part that does not need the Lean toolchain, and `pytest -m lean` runs only the cases that invoke it.
 - `cd lean && lake build` builds the pinned Lean project; `python -m neuralproof.cli doctor` checks the local Lean setup.
 - `python -m neuralproof.cli data trace --file <file.lean> --output <trace.json>` exports native InfoTree data.
 - `python -m neuralproof.cli data trace-corpus --files 200 --output data/mathlib-info-tree-200` starts or resumes staged extraction; inspect its summary and per-file stats.

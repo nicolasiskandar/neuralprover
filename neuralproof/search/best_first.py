@@ -14,9 +14,10 @@ class SearchResult:
     expanded:int
     tactic_calls:int
     trace:list[dict]=field(default_factory=list)
+    rejected_candidates:int=0
 
 def best_first(client,theorem,predictor,*,context="import Lean",max_nodes=50,width=5,timeout=30,max_depth=12,deduplicate=True,priority="model"):
-    start=time.monotonic(); seq=count(); initial=client.inspect(client.initial_state(theorem,context)); seen=set(); expanded=calls=0; trace=[]
+    start=time.monotonic(); seq=count(); initial=client.inspect(client.initial_state(theorem,context)); seen=set(); expanded=calls=0; trace=[]; rejected=0
     if not initial.success or initial.state is None:
         return SearchResult(None,False,0,0,[{"initial_state_inspection":False,"error":initial.error}])
     trace.append({"initial_state_inspection":True,"goal_state":initial.state.goal_state,"goals":list(initial.state.goals)})
@@ -27,6 +28,10 @@ def best_first(client,theorem,predictor,*,context="import Lean",max_nodes=50,wid
         seen.add(state.prefix); expanded+=1
         if depth>=max_depth: continue
         for cand in predictor.predict(state,width):
+            # An empty candidate is not a tactic; sending it to Lean would
+            # spend a Lean call and a timeout slot on a guaranteed error.
+            if not cand.tactic.strip():
+                rejected+=1; trace.append({"depth":depth,"tactic":"","rejected":"empty candidate"}); continue
             remaining=max(.001,timeout-(time.monotonic()-start)); old_timeout=client.timeout
             client.timeout=min(old_timeout,remaining)
             calls+=1
@@ -40,9 +45,9 @@ def best_first(client,theorem,predictor,*,context="import Lean",max_nodes=50,wid
                 finally: client.timeout=old_timeout
                 if verification.verified:
                     trace.append({"final_verification":True,"axioms":list(verification.axioms)})
-                    return SearchResult(proof,True,expanded,calls,trace)
+                    return SearchResult(proof,True,expanded,calls,trace,rejected)
                 trace.append({"final_verification":False,"error":verification.output,"axioms":list(verification.axioms)})
                 continue
             key=-cand.score if priority=="model" else float(depth+1)
             heapq.heappush(queue,(key,next(seq),depth+1,result.state))
-    return SearchResult(None,False,expanded,calls,trace)
+    return SearchResult(None,False,expanded,calls,trace,rejected)

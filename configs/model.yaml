@@ -12,3 +12,9 @@ training:
   batch_size: 1
   seed: 17
   output_dir: experiments/smol-lora
+  # -1 means "as many steps as the epochs need"; a budget of 0 would end the
+  # run after its first step.
+  max_steps: -1
+  # Only train on rows whose mined goal state is the proof-global goal list,
+  # which is the state the live client reports.
+  goal_scope: proof

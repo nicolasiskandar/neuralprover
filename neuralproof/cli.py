@@ -20,7 +20,7 @@ def main():
     nt=ds.add_parser("normalize-trace"); nt.add_argument("--trace",required=True); nt.add_argument("--source",required=True); nt.add_argument("--output",required=True)
     rt=ds.add_parser("replay-trace"); rt.add_argument("--source",required=True); rt.add_argument("--output",default="data/validated/latest.jsonl"); rt.add_argument("--stats",default="data/validated/latest.stats.json"); rt.add_argument("--timeout",type=float,default=120)
     q=s.add_parser("prove"); q.add_argument("--file",required=True); q.add_argument("--tactics",default="rfl,assumption,exact True.intro"); q.add_argument("--model-id"); q.add_argument("--adapter"); q.add_argument("--revision")
-    tr=s.add_parser("train"); tr.add_argument("--data",required=True); tr.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); tr.add_argument("--revision"); tr.add_argument("--output",default="experiments/smol-lora"); tr.add_argument("--epochs",type=int,default=1); tr.add_argument("--max-steps",type=int,default=0); tr.add_argument("--seed",type=int,default=17); tr.add_argument("--resume")
+    tr=s.add_parser("train"); tr.add_argument("--data",required=True); tr.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); tr.add_argument("--revision"); tr.add_argument("--output",default="experiments/smol-lora"); tr.add_argument("--epochs",type=int,default=1); tr.add_argument("--max-steps",type=int,default=-1,help="positive step budget, or -1 (the default) to train for the full number of epochs; 0 is rejected because it would stop the run after one step"); tr.add_argument("--seed",type=int,default=17); tr.add_argument("--resume"); tr.add_argument("--goal-scope",default="proof",help="only train on rows whose mined goal state has this scope; 'proof' keeps the states the live client actually reports, '' keeps every row")
     ev=s.add_parser("evaluate"); ev.add_argument("--data",required=True); ev.add_argument("--output",default="experiments/smoke/results.jsonl"); ev.add_argument("--tactics",default="rfl,trivial,assumption,exact True.intro"); ev.add_argument("--nodes",type=int,default=20); ev.add_argument("--width",type=int,default=4); ev.add_argument("--model-id"); ev.add_argument("--adapter"); ev.add_argument("--revision"); ev.add_argument("--priority",choices=["model","bfs"],default="model"); ev.add_argument("--no-deduplicate",action="store_true")
     et=s.add_parser("evaluate-tactics"); et.add_argument("--data",required=True); et.add_argument("--output",default="experiments/tactic-prediction/results.json"); et.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); et.add_argument("--revision"); et.add_argument("--adapter",required=True); et.add_argument("--limit",type=int,default=100); et.add_argument("--seed",default="neuralproof-next-tactic-v1")
     pp=s.add_parser("preprocess"); pp.add_argument("--input",default="data/raw/sample.jsonl"); pp.add_argument("--output",default="data/processed"); pp.add_argument("--seed",default="neuralproof-v1"); pp.add_argument("--include-unvalidated",action="store_true",help="keep rows whose context was never replayed by Lean; they are stamped validation_status=unreplayed")
@@ -118,23 +118,27 @@ def main():
                   "outputs":{name:{"path":str(dest/f"{name}.jsonl"),"rows":len(rows),"sha256":sha256_file(dest/f"{name}.jsonl")} for name,rows in result.groups.items()},
                   "split_counts":{name:len(rows) for name,rows in result.groups.items()},
                   "excluded_unvalidated":result.excluded_unvalidated,
+                  "excluded_non_tactic_targets":result.excluded_non_tactic_targets,
                   "include_unvalidated":result.include_unvalidated,
                   "split_disagreements":result.split_disagreements,
                   "goal_scope_counts":result.goal_scope_counts,
                   "validation_status_counts":result.validation_status_counts,
                   "validation_policy":"rows are included only when validation is replayed, declaration_replayed, or absent; --include-unvalidated keeps the rest and stamps them unreplayed",
                   "goal_scope_policy":"proof = mined state is the proof-global goal list; focus = mined inside a tactic focus; conv = mined conv subgoal",
+                  "label_policy":"rows whose target is not a tactic (the `by` of a header, the `where` of a structure instance, a brace, a placeholder) are excluded; no tactic can answer them",
                   "caveats":["rows marked validation_status=unreplayed were never replayed by Lean and are not verified proofs",
-                             "rows marked goal_scope=focus were mined inside a tactic focus and do not match the proof-global state the live client reports"]}
+                             "rows marked goal_scope=focus were mined inside a tactic focus and do not match the proof-global state the live client reports",
+                             "code_diff_sha256 is taken before this manifest is written, and the manifest is itself a tracked file, so the digest identifies the code and inputs that produced the rows and not the tree that includes this manifest"]}
         write_manifest(dest/"manifest.json",manifest)
         print(json.dumps({**{k:len(v) for k,v in result.groups.items()},"excluded_unvalidated":result.excluded_unvalidated,
+                          "excluded_non_tactic_targets":result.excluded_non_tactic_targets,
                           "include_unvalidated":result.include_unvalidated,
                           "split_disagreements":result.split_disagreements,"goal_scope_counts":result.goal_scope_counts,
                           "validation_status_counts":result.validation_status_counts,
                           "split_seed":result.split_seed,"input_rows":len(source_rows),"manifest":str(dest/"manifest.json")})); return
     if a.cmd=="train":
         from neuralproof.models.finetune import train
-        train(a.data,a.model,a.output,a.revision,a.epochs,a.seed,a.resume,a.max_steps); return
+        train(a.data,a.model,a.output,a.revision,a.epochs,a.seed,a.resume,a.max_steps,a.goal_scope); return
     if a.cmd=="evaluate":
         from neuralproof.evaluation.benchmark import run
         from neuralproof.evaluation.metrics import summarize
@@ -143,7 +147,10 @@ def main():
         if a.model_id:
             from neuralproof.models.predictor import load_hf_predictor
             predictor=load_hf_predictor(a.model_id,a.adapter,a.revision)
-        results=run(rows,LeanClient(),predictor,a.output,max_nodes=a.nodes,width=a.width,priority=a.priority,deduplicate=not a.no_deduplicate)
+        try:
+            results=run(rows,LeanClient(),predictor,a.output,max_nodes=a.nodes,width=a.width,priority=a.priority,deduplicate=not a.no_deduplicate)
+        except ValueError as error:
+            raise SystemExit(str(error))
         summary=summarize(results); print(json.dumps(summary)); return
     if a.cmd=="evaluate-tactics":
         from neuralproof.evaluation.tactic_prediction import evaluate_tactic_prediction
