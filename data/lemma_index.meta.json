@@ -1,0 +1,27 @@
+{
+  "artifact": "mathlib_lemma_index",
+  "schema_version": 2,
+  "command": "python scripts/build_lemma_index.py",
+  "dump_command": "cd lean && lake env lean --run NeuralProof/DumpDeclarations.lean",
+  "dump_source": "lean/NeuralProof/DumpDeclarations.lean",
+  "dump_sha256": "af2ffb569dbec09873890d5ffcc782a45b410ce5e7ed3191d8a5b713593bef42",
+  "dump_line_count": 797294,
+  "lean_toolchain": "leanprover/lean4:v4.35.0",
+  "mathlib_revision": "56a005855ea17e0b0958f73ec801ae140b0a1679",
+  "constant_count": 797294,
+  "basename_count": 240421,
+  "count": 1037715,
+  "format": "gzip-compressed JSON array",
+  "output": "data/lemma_index.json.gz",
+  "output_sha256": "4ceab94a747f566ed30325ac741fac0452be6732850324495f4c0798dfe53968",
+  "code_revision": "de66b4745659b9b0f090dff9ef3e0b5ed740ccdc",
+  "code_state": "dirty",
+  "code_diff_sha256": "c110701e9b1c45bc4143f790450fb96ee38fc1313c0e2a15fd6ed1ae09d86eda",
+  "generated_at": "2026-11-02T16:24:47.744595+00:00",
+  "caveats": [
+    "the index is a name set, not a proof that a name is applicable",
+    "private and internal constant names are included as printed by Lean",
+    "last components are indexed so unqualified names can resolve",
+    "the pre-filter still treats identifiers in the goal state as known"
+  ]
+}
