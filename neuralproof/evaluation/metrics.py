@@ -13,5 +13,6 @@ def summarize(results):
             "mean_tactic_calls":sum(x.get("tactic_calls",0) for x in results)/n if n else None,
             "invalid_tactics":sum(x.get("invalid_tactics",0) for x in results),
             "timeouts":sum(x.get("timeouts",0) for x in results),
+            "rejected_unknown_lemmas":sum(x.get("rejected_unknown_lemmas",0) for x in results),
             "inference_tokens":sum(token_counts) if token_counts else None,
             "gpu_seconds":None,"gpu_memory_mb":None}

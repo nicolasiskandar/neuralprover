@@ -30,6 +30,7 @@ def run(rows,client,predictor,output,**budget):
         out.append({"theorem_id":row.get("theorem_id"),"verified":r.verified,"proof":r.proof,
             "search_trace":r.trace,"solve_seconds":time.monotonic()-t,"expanded":r.expanded,
             "tactic_calls":r.tactic_calls,"invalid_tactics":invalid,"timeouts":timed_out,
+            "rejected_unknown_lemmas":r.rejected_unknown_lemmas,
             "inference_tokens":None,"gpu_seconds":None,"gpu_memory_mb":None})
     target=Path(output); target.parent.mkdir(parents=True,exist_ok=True); target.write_text("".join(json.dumps(x)+"\n" for x in out))
     if out:

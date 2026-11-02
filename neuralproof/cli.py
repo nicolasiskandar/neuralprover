@@ -19,9 +19,9 @@ def main():
     ti=ds.add_parser("trace"); ti.add_argument("--file",required=True); ti.add_argument("--output",default="data/traces/latest.json"); ti.add_argument("--timeout",type=float,default=300)
     nt=ds.add_parser("normalize-trace"); nt.add_argument("--trace",required=True); nt.add_argument("--source",required=True); nt.add_argument("--output",required=True)
     rt=ds.add_parser("replay-trace"); rt.add_argument("--source",required=True); rt.add_argument("--output",default="data/validated/latest.jsonl"); rt.add_argument("--stats",default="data/validated/latest.stats.json"); rt.add_argument("--timeout",type=float,default=120)
-    q=s.add_parser("prove"); q.add_argument("--file",required=True); q.add_argument("--tactics",default="rfl,assumption,exact True.intro"); q.add_argument("--model-id"); q.add_argument("--adapter"); q.add_argument("--revision")
+    q=s.add_parser("prove"); q.add_argument("--file",required=True); q.add_argument("--tactics",default="rfl,assumption,exact True.intro"); q.add_argument("--model-id"); q.add_argument("--adapter"); q.add_argument("--revision"); q.add_argument("--filter-invalid-lemmas",action="store_true",help="refuse candidates that name a symbol absent from the lemma index and the goal state (experimental; Lean still checks every tried tactic)")
     tr=s.add_parser("train"); tr.add_argument("--data",required=True); tr.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); tr.add_argument("--revision"); tr.add_argument("--output",default="experiments/smol-lora"); tr.add_argument("--epochs",type=int,default=1); tr.add_argument("--max-steps",type=int,default=-1,help="positive step budget, or -1 (the default) to train for the full number of epochs; 0 is rejected because it would stop the run after one step"); tr.add_argument("--seed",type=int,default=17); tr.add_argument("--resume"); tr.add_argument("--goal-scope",default="proof",help="only train on rows whose mined goal state has this scope; 'proof' keeps the states the live client actually reports, '' keeps every row")
-    ev=s.add_parser("evaluate"); ev.add_argument("--data",required=True); ev.add_argument("--output",default="experiments/smoke/results.jsonl"); ev.add_argument("--tactics",default="rfl,trivial,assumption,exact True.intro"); ev.add_argument("--nodes",type=int,default=20); ev.add_argument("--width",type=int,default=4); ev.add_argument("--model-id"); ev.add_argument("--adapter"); ev.add_argument("--revision"); ev.add_argument("--priority",choices=["model","bfs"],default="model"); ev.add_argument("--no-deduplicate",action="store_true")
+    ev=s.add_parser("evaluate"); ev.add_argument("--data",required=True); ev.add_argument("--output",default="experiments/smoke/results.jsonl"); ev.add_argument("--tactics",default="rfl,trivial,assumption,exact True.intro"); ev.add_argument("--nodes",type=int,default=20); ev.add_argument("--width",type=int,default=4); ev.add_argument("--model-id"); ev.add_argument("--adapter"); ev.add_argument("--revision"); ev.add_argument("--priority",choices=["model","bfs"],default="model"); ev.add_argument("--no-deduplicate",action="store_true"); ev.add_argument("--filter-invalid-lemmas",action="store_true",help="refuse candidates that name a symbol absent from the lemma index and the goal state (experimental; Lean still checks every tried tactic)")
     et=s.add_parser("evaluate-tactics"); et.add_argument("--data",required=True); et.add_argument("--output",default="experiments/tactic-prediction/results.json"); et.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); et.add_argument("--revision"); et.add_argument("--adapter",required=True); et.add_argument("--limit",type=int,default=100); et.add_argument("--seed",default="neuralproof-next-tactic-v1")
     pp=s.add_parser("preprocess"); pp.add_argument("--input",default="data/raw/sample.jsonl"); pp.add_argument("--output",default="data/processed"); pp.add_argument("--seed",default="neuralproof-v1"); pp.add_argument("--include-unvalidated",action="store_true",help="keep rows whose context was never replayed by Lean; they are stamped validation_status=unreplayed")
     rp=s.add_parser("report"); rp.add_argument("--results-dir",default="experiments")
@@ -101,7 +101,7 @@ def main():
         if a.model_id:
             from neuralproof.models.predictor import load_hf_predictor
             predictor=load_hf_predictor(a.model_id,a.adapter,a.revision)
-        r=best_first(LeanClient(),theorem,predictor,context=context,max_nodes=30,width=3)
+        r=best_first(LeanClient(),theorem,predictor,context=context,max_nodes=30,width=3,filter_invalid_lemmas=a.filter_invalid_lemmas)
         print(json.dumps(vars(r),indent=2)); return
     if a.cmd=="preprocess":
         from neuralproof.data.preprocessing import prepare_dataset
@@ -148,7 +148,7 @@ def main():
             from neuralproof.models.predictor import load_hf_predictor
             predictor=load_hf_predictor(a.model_id,a.adapter,a.revision)
         try:
-            results=run(rows,LeanClient(),predictor,a.output,max_nodes=a.nodes,width=a.width,priority=a.priority,deduplicate=not a.no_deduplicate)
+            results=run(rows,LeanClient(),predictor,a.output,max_nodes=a.nodes,width=a.width,priority=a.priority,deduplicate=not a.no_deduplicate,filter_invalid_lemmas=a.filter_invalid_lemmas)
         except ValueError as error:
             raise SystemExit(str(error))
         summary=summarize(results); print(json.dumps(summary)); return
