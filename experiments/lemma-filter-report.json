@@ -1,0 +1,426 @@
+{
+  "protocol": "held-out source targets were accepted by Lean; a filter rejection is therefore a false reject",
+  "checked_targets": 342,
+  "missing_examples": [],
+  "false_rejects": 0,
+  "false_reject_rate": 0.0,
+  "false_rejects_by_symbol": {},
+  "false_reject_examples": [],
+  "prediction_rejects": 62,
+  "correct_predictions_rejected": 0,
+  "prediction_reject_examples": [
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3286-3301",
+      "tactic": "rw [algebraMap_eq_unit_iff]",
+      "exact_match": false,
+      "unknown": [
+        "algebraMap_eq_unit_iff"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_quasispectrum_eq::3538-3598",
+      "tactic": "rw [quasispectrum_iff_comm_quasispectrum_iff]",
+      "exact_match": false,
+      "unknown": [
+        "quasispectrum_iff_comm_quasispectrum_iff"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsStrictlyPositive_smul::4765-4825",
+      "tactic": "rw [is_unit_eq_zero, is_unit_eq_zero]",
+      "exact_match": false,
+      "unknown": [
+        "is_unit_eq_zero"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3026-3099",
+      "tactic": "rw [mem_closure_eq_iff, mem_closure_eq_iff]",
+      "exact_match": false,
+      "unknown": [
+        "mem_closure_eq_iff"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3321-3330",
+      "tactic": "rw [IsUnit_eq_one]",
+      "exact_match": false,
+      "unknown": [
+        "IsUnit_eq_one"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4589-4621",
+      "tactic": "rw [\u2190 fun_surjective_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun",
+      "exact_match": false,
+      "unknown": [
+        "fun_surjective_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun_fun"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_ModEq_listProd_one::1144-1174",
+      "tactic": "rw [prod_eq_prod]",
+      "exact_match": false,
+      "unknown": [
+        "prod_eq_prod"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3248-3260",
+      "tactic": "simp only [resulventSet_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set",
+      "exact_match": false,
+      "unknown": [
+        "resulventSet_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set_set"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::3420-3424",
+      "tactic": "rw [imp_map_map_map_map]",
+      "exact_match": false,
+      "unknown": [
+        "imp_map_map_map_map"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts::2561-2589",
+      "tactic": "simp [\u2190 mul_add_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul",
+      "exact_match": false,
+      "unknown": [
+        "mul_add_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul_add_mul"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_Algebra_instSMulCommClassCarrier::13244-13308",
+      "tactic": "rw [algebraMap_eq_smul, algebrasum_smul, algebrasum_smul_eq]",
+      "exact_match": false,
+      "unknown": [
+        "algebraMap_eq_smul",
+        "algebrasum_smul",
+        "algebrasum_smul_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::CommAlgCat_Hom_ext::1992-1995",
+      "tactic": "rw [\u2190 hom_eq_hom_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq",
+      "exact_match": false,
+      "unknown": [
+        "hom_eq_hom_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Presheaf_Limits_lean::PresheafOfModules_limitPresheafOfModules::2658-2663",
+      "tactic": "rw [\u2190 apply apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_",
+      "exact_match": false,
+      "unknown": [
+        "apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_quasispectrum_eq::3702-3711",
+      "tactic": "rw [is_quasiregular_iff_is_unit]",
+      "exact_match": false,
+      "unknown": [
+        "is_quasiregular_iff_is_unit"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::CommAlgCat_reflectsIsomorphisms_forget::6695-6745",
+      "tactic": "rw [forget_isIso]",
+      "exact_match": false,
+      "unknown": [
+        "forget_isIso"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3894-3992",
+      "tactic": "rw [ha, r, hs_eq_zero]",
+      "exact_match": false,
+      "unknown": [
+        "hs_eq_zero"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4635-4697",
+      "tactic": "rw [\u2190 fun_map_apply, fun_apply_apply, fun_apply_apply]",
+      "exact_match": false,
+      "unknown": [
+        "fun_map_apply",
+        "fun_apply_apply"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4413-4478",
+      "tactic": "rw [epi.apply_imp_map_inv]",
+      "exact_match": false,
+      "unknown": [
+        "epi.apply_imp_map_inv"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsStrictlyPositive_spectrum_pos::5412-5416",
+      "tactic": "rw [is_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of",
+      "exact_match": false,
+      "unknown": [
+        "is_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_quasispectrum_eq::3601-3623",
+      "tactic": "rw [is_quasiregular_iff_unit_unit]",
+      "exact_match": false,
+      "unknown": [
+        "is_quasiregular_iff_unit_unit"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_TransferInstance_lean::Equiv_algEquiv::1931-1953",
+      "tactic": "rw [algebraMap_eq_ringEquiv]",
+      "exact_match": false,
+      "unknown": [
+        "algebraMap_eq_ringEquiv"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Presheaf_Limits_lean::PresheafOfModules_limitPresheafOfModules::2668-2748",
+      "tactic": "rw [\u2190 apply apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_",
+      "exact_match": false,
+      "unknown": [
+        "apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsStrictlyPositive_spectrum_pos::5412-5472",
+      "tactic": "rw [is_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of",
+      "exact_match": false,
+      "unknown": [
+        "is_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of_zero_of"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4548-4587",
+      "tactic": "rw [fun_apply_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_",
+      "exact_match": false,
+      "unknown": [
+        "fun_apply_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_AlgCat_Basic_lean::AlgCat_restrictScalarsId_::9062-9070",
+      "tactic": "rw [algebraMap_eq_algebraMap_eq]",
+      "exact_match": false,
+      "unknown": [
+        "algebraMap_eq_algebraMap_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_spectrum_eq::2838-2859",
+      "tactic": "rw [spectrum_eq_comm_comm_eq]",
+      "exact_match": false,
+      "unknown": [
+        "spectrum_eq_comm_comm_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3303-3319",
+      "tactic": "rw [algebraMap_eq_one]",
+      "exact_match": false,
+      "unknown": [
+        "algebraMap_eq_one"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::isQuasiregular_pi_iff::2014-2106",
+      "tactic": "simp only [IsQuasiregular_iff_isQuasiregular_iff]",
+      "exact_match": false,
+      "unknown": [
+        "IsQuasiregular_iff_isQuasiregular_iff"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::LinearMap_comp_id_semiModuleCat::15931-15935",
+      "tactic": "rw [Hom.hom_eq_map_map, map_eq_map_map, map_eq_map_map]",
+      "exact_match": false,
+      "unknown": [
+        "map_eq_map_map"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4719-4755",
+      "tactic": "rw [\u2190 fun_choose_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply",
+      "exact_match": false,
+      "unknown": [
+        "fun_choose_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_spectrum_eq::2899-2910",
+      "tactic": "simp only [resolventSet_eq_iff]",
+      "exact_match": false,
+      "unknown": [
+        "resolventSet_eq_iff"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsStrictlyPositive_spectrum_pos::5475-5510",
+      "tactic": "rw [isStrictlyPositive_eq_zero_iff, isStrictlyPositive_iff]",
+      "exact_match": false,
+      "unknown": [
+        "isStrictlyPositive_eq_zero_iff"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4539-4628",
+      "tactic": "rw [fun_apply_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_",
+      "exact_match": false,
+      "unknown": [
+        "fun_apply_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_functor_"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_listProd_one::4970-5000",
+      "tactic": "rw [prod_eq_prod]",
+      "exact_match": false,
+      "unknown": [
+        "prod_eq_prod"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_BigOperators_Group_Finset_Preimage_lean::Finset_prod_preimage_::926-945",
+      "tactic": "simp [image_preimage_eq_zero]",
+      "exact_match": false,
+      "unknown": [
+        "image_preimage_eq_zero"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_quasispectrum_eq::4100-4134",
+      "tactic": "rw [is_quasiregular_iff_unit_iff]",
+      "exact_match": false,
+      "unknown": [
+        "is_quasiregular_iff_unit_iff"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Presheaf_Limits_lean::PresheafOfModules_evaluationJointlyReflectsLimits::1661-1667",
+      "tactic": "rw [\u2190 is_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp",
+      "exact_match": false,
+      "unknown": [
+        "is_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp_of_imp"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_Hom_ext_iff::3459-3462",
+      "tactic": "rw [Hom_eq_hom_eq, hom_eq_eq_eq]",
+      "exact_match": false,
+      "unknown": [
+        "Hom_eq_hom_eq",
+        "hom_eq_eq_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::CommAlgCat_reflectsIsomorphisms_forget::6640-6690",
+      "tactic": "rw [comm_isIso_map_forget]",
+      "exact_match": false,
+      "unknown": [
+        "comm_isIso_map_forget"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instPreservesFiniteLimitsFunctorAddCommGrpCatColim::2112-2168",
+      "tactic": "rw [preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_",
+      "exact_match": false,
+      "unknown": [
+        "preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_lims_iff_preserves_finite_"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::irreducible_subset_of_submonoidClosure_eq_top::1559-1624",
+      "tactic": "rw [Imm_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_",
+      "exact_match": false,
+      "unknown": [
+        "Imm_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_iff_"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_multisetProd_one::5897-5931",
+      "tactic": "rw [prod_eq_prod]",
+      "exact_match": false,
+      "unknown": [
+        "prod_eq_prod"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_AlgCat_Basic_lean::AlgCat_restrictScalarsComp_::9850-9853",
+      "tactic": "rw [algebraMap_eq_comp_eq]",
+      "exact_match": false,
+      "unknown": [
+        "algebraMap_eq_comp_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_prod_modEq_single::7649-7745",
+      "tactic": "simp [f_eq_iff_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq",
+      "exact_match": false,
+      "unknown": [
+        "f_eq_iff_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_spectrum_eq::2912-2924",
+      "tactic": "simp [resulventSet_eq_set_eq]",
+      "exact_match": false,
+      "unknown": [
+        "resulventSet_eq_set_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4704-4712",
+      "tactic": "rw [\u2190 fun_choose_apply, fun_choose_apply]",
+      "exact_match": false,
+      "unknown": [
+        "fun_choose_apply"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Presheaf_Limits_lean::PresheafOfModules_limitCone::3834-3877",
+      "tactic": "rw [\u2190 apply apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_",
+      "exact_match": false,
+      "unknown": [
+        "apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_apply_"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_quasispectrum_eq::4072-4094",
+      "tactic": "rw [is_quasiregular_iff_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit",
+      "exact_match": false,
+      "unknown": [
+        "is_quasiregular_iff_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit_unit"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_AlgCat_Basic_lean::AlgCat_restrictScalarsComp_::9839-9848",
+      "tactic": "rw [algebraMap_eq_eq]",
+      "exact_match": false,
+      "unknown": [
+        "algebraMap_eq_eq"
+      ]
+    },
+    {
+      "example_id": "Mathlib_Algebra_Category_ModuleCat_Presheaf_EpiMono_lean::PresheafOfModules_injective_of_mono::1636-1673",
+      "tactic": "rw [Hom.injective_apply_injective]",
+      "exact_match": false,
+      "unknown": [
+        "Hom.injective_apply_injective"
+      ]
+    }
+  ],
+  "index": "/home/nicolas/workspace/neuralprover/data/lemma_index.json.gz",
+  "index_size": 1037715,
+  "targets_from": "/home/nicolas/workspace/neuralprover/experiments/mathlib-info-tree-lora-200-1epoch-canonical/tactic-eval-full-heldout.json",
+  "curated_hallucinations": {
+    "not_a_lemma_anywhere": false,
+    "totally_made_up_lemma_xyz": false,
+    "fake_simp_lemma_qqq": false
+  },
+  "curated_accepted": []
+}

@@ -1,5 +1,25 @@
 # Experiment log
 
+## 2026-11-02 — lemma pre-filter hardening and measurement
+
+- Made the lemma pre-filter opt-in. `best_first(..., filter_invalid_lemmas=False)` is now the default, `prove`/`evaluate` expose `--filter-invalid-lemmas`, and `benchmark.run` threads the flag through. A filtered run reports `rejected_unknown_lemmas` next to `tactic_calls`, `invalid_tactics`, and `timeouts`; a missing index raises instead of silently running unfiltered.
+- Replaced the three duplicated extractors with `neuralproof/lemmas.py`. It extracts only identifier heads of rewriting/simplification brackets and the leading term of `apply`/`exact`/`refine`/`simpa`, ignores binders and keywords, keeps single-letter and local names, and treats identifiers in the current context/goal as known. `reassoc_of%` is recognised as a term elaborator rather than a lemma.
+- Regenerated the index from the pinned environment with `lean/NeuralProof/DumpDeclarations.lean` and `scripts/build_lemma_index.py`. It contains 797,294 constant names from Mathlib `56a005855ea17e0b0958f73ec801ae140b0a1679` / Lean `v4.35.0`, plus 240,421 last components (1,037,715 names total). The compressed artifact is `data/lemma_index.json.gz` (4.9 MiB) with provenance in `data/lemma_index.meta.json` (dump command, revision, toolchain, counts, dump/output SHA-256, code revision, dirty-tree digest).
+- `scripts/check_lemma_filter.py --limit 342` reports **0/342 false rejects** on held-out source tactics that Lean accepted in the original files. It refuses 62/342 one-epoch LoRA predictions and loses **0 of the 21** correct predictions, consistent with all 21 correct predictions being `simp` (14), `ext` (5), or `rfl` (2) with no lemma arguments.
+- Plumbing diagnostic on the 25-row replay corpus (`data/mathlib-200/examples.jsonl`), fixed candidates `rw [not_a_lemma_anywhere], rfl`, 1 node/width 2. Without the filter: 25 attempts, 2.0 tactic calls/problem, 50 invalid tactics, 0 rejected. With the filter: 25 attempts, 1.0 call/problem, 25 invalid tactics, 25 rejected unknown lemmas. Both runs verified 0/25. This shows the flag and counters; it is plumbing evidence, not a performance result, and the artificial candidate list is not a model sample.
+- `pytest -m "not lean"`: 239 passed, 24 deselected. No proof-solving improvement is claimed.
+
+## 2026-10-28 — lemma-usage analysis and the first filter
+
+- Ran `scripts/analyze_lemmas.py` over the 1-epoch eval joined to the held-out corpus. All 33 `rw`, 19 `apply`, 19 `exact`, and 26 `simpa` source families were wrong; `simp` was 14/55. Most same-family errors were lemma-selection errors (a local hypothesis replaced by another local hypothesis, or a concatenated hallucinated name such as `algebraMap_eq_smul`), not tactic-family errors.
+- Added `data/lemma_index.json` and a name filter to search in `de66b47`. The first version was default-on, did not allow local hypotheses or goal-state identifiers, dropped single-letter names, treated `fun` as a lemma, and fell back to a permissive base-name check. Applied to the held-out source targets, it rejected 28/342 valid tactics (for example `rw [hSgen]`, `rw [← heq]`, `rw [hm, ...]`, `simpa using hu.star...`, `simp only [range_eq_Ico]`), so it was a harness defect rather than a useful result. The 2026-11-02 entry replaces it.
+
+## 2026-10-25 — error analysis of the 1-epoch LoRA eval
+
+- Ran `scripts/error_analysis.py` on `experiments/mathlib-info-tree-lora-200-1epoch-canonical/tactic-eval-full-heldout.json` joined to `data/mathlib-info-tree-200/examples.jsonl`.
+- Base: 0/342 exact matches, 157 silent predictions. LoRA: 21/342, 0 silent predictions. Of the 21 correct predictions, all are lemma-free tactics: `simp` 14, `ext` 5, `rfl` 2. The adapter fixed 7 base-silent rows and 14 base-non-silent rows; it turned 150 base-silent rows and 171 base-non-silent rows into wrong non-silent guesses.
+- The family breakdown shows the remaining errors are concentrated in `rw`/`apply`/`exact`/`simpa`, where the model must select a lemma. This is a tactic exact-match diagnostic, not a proof-solving result.
+
 - Kernel-checked search evaluation (`evaluate`) on the 2-row Mathlib replay test set (`data/mathlib-200/processed/test.jsonl`) with default search settings (20 nodes, width 4): base 0/2 (Wilson [0, 0.658], 1.0 node/3.0 calls, 6 invalid tactics), LoRA adapter 0/2 (1.5 nodes/6.0 calls, 11 invalid tactics). On this tiny test set there is no proof-solving gain; this is not evidence of general performance.
 
 ## 2026-10-24 — one-epoch LoRA on the 200-file InfoTree corpus (full held-out eval)

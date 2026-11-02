@@ -1,0 +1,840 @@
+{
+  "protocol": "greedy top-1; strip outer whitespace; exact string match; single-line source targets only",
+  "data_file": "data/mathlib-info-tree-200/examples.jsonl",
+  "heldout_examples": 446,
+  "eligible_single_line_examples": 413,
+  "excluded_non_tactic_targets": 33,
+  "sample_size": 50,
+  "seed": "neuralproof-mathlib-info-tree-v1",
+  "base_model": "HuggingFaceTB/SmolLM2-135M",
+  "model_revision": "4e53f736cbb20a9a0f56b4c4bf378d9f306ff915",
+  "adapter": "experiments/mathlib-info-tree-lora-200-100steps",
+  "base": {
+    "model": "base",
+    "attempted": 50,
+    "exact_matches": 0,
+    "exact_match_accuracy": 0.0,
+    "silent_predictions": 22,
+    "wilson95": [
+      0.0,
+      0.07135003417431873
+    ],
+    "inference_seconds": 114.57428134400107,
+    "examples": [
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Presheaf_Limits_lean::PresheafOfModules_evaluationJointlyReflectsLimits::1672-1719",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Presheaf/Limits.lean",
+        "target": "exact (hc X).fac ((evaluation R X).mapCone s) j",
+        "prediction": "F :",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3286-3301",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "Prod.isUnit_iff",
+        "prediction": "{a_1 | IsUnit ((algebraMap R A) a_1 - a) ∧ IsUnit ((algebraMap",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3741-3793",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "obtain ⟨a, b, hr, ha, hb⟩ := hrirred <| by simpa",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_HopfAlgCat_Monoidal_lean::HopfAlgCat_MonoidalCategory_inducingFunctorData::2181-2184",
+        "source_file": "Mathlib/Algebra/Category/HopfAlgCat/Monoidal.lean",
+        "target": "rfl",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_multisetProd_map::5587-5622",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using listProd_map (l := l) h",
+        "prediction": "f g : α → ℤ",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Subalgebra_MulOpposite_lean::Subalgebra_unop_adjoin::4922-4940",
+        "source_file": "Mathlib/Algebra/Algebra/Subalgebra/MulOpposite.lean",
+        "target": "Set.preimage_union",
+        "prediction": "Subsem",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3175-3196",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "apply compl_injective",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsUnit_isStrictlyPositive_star_right_conjugate_iff::3417-3439",
+        "source_file": "Mathlib/Algebra/Algebra/StrictPositivity.lean",
+        "target": "lift u to Aˣ using hu",
+        "prediction": "⊢",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_Ico_by_parts::1402-1472",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "conv in (occs := 3) (f _ • g _) => rw [← sum_range_succ_sub_sum g]",
+        "prediction": "m n :",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::CommAlgCat_hom_inv_apply::3977-3981",
+        "source_file": "Mathlib/Algebra/Category/CommAlgCat/Basic.lean",
+        "target": "simp",
+        "prediction": "variable {R : Type u} [CommAlgCat.{v} R]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts_::3059-3063",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "simp",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3251-3337",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "refine (irreducible_subset_of_submonoidClosure_eq_top hSgen).antisymm fun r hrS ↦ ?_",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_TensorAlgebra_lean::AlgCat_tensorAlgebraAdj::1732-1737",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/TensorAlgebra.lean",
+        "target": "dsimp",
+        "prediction": "((tensorAlgebra R).map ({ app := fun M => ModuleCat.ofHom (TensorAlgebra.ι R), naturality := �",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_quasispectrum_eq::3538-3598",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "simp only [quasispectrum, Set.mem_ofPred_eq, Set.mem_iUnion]",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsUnit_isStrictlyPositive_star_right_conjugate_iff::3442-3513",
+        "source_file": "Mathlib/Algebra/Algebra/StrictPositivity.lean",
+        "target": "rw [← Units.coe_star, Units.isUnit_mul_units, Units.isUnit_units_mul]",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::commAlgCatEquivUnder::7767-7774",
+        "source_file": "Mathlib/Algebra/Category/CommAlgCat/Basic.lean",
+        "target": "inverse",
+        "prediction": "R✝ :",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3964-3974",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "rw [hSgen]",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Azumaya_Matrix_lean::AlgHom_mulLeftRightMatrix_inv::1351-1383",
+        "source_file": "Mathlib/Algebra/Azumaya/Matrix.lean",
+        "target": "simp [mul_smul, Finset.smul_sum]",
+        "prediction": "⊢",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_listSum_zero::5391-5421",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using listSum_map_zero h",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_instReflectsIsomorphismsAddCommMonCatForget_LinearMapIdCarrierAddMonoidHomCarrier::14773-14787",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "infer_instance",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_instReflectsIsomorphismsAddCommMonCatForget_LinearMapIdCarrierAddMonoidHomCarrier::14657-14661",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "have",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CoalgCat_Monoidal_lean::CoalgCat_MonoidalCategory_inducingFunctorData::2074-2077",
+        "source_file": "Mathlib/Algebra/Category/CoalgCat/Monoidal.lean",
+        "target": "rfl",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CoalgCat_Monoidal_lean::CoalgCat_MonoidalCategory_inducingFunctorData::2230-2233",
+        "source_file": "Mathlib/Algebra/Category/CoalgCat/Monoidal.lean",
+        "target": "rfl",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_Zero_lean::CommGrpCat_isZero_of_subsingleton::1799-1826",
+        "source_file": "Mathlib/Algebra/Category/Grp/Zero.lean",
+        "target": "rw [this, map_one, map_one]",
+        "prediction": "G :",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_Basic_lean::AlgCat_hom_ext_iff::3299-3302",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/Basic.lean",
+        "target": "ext",
+        "prediction": "case (R : Type u) [CommRing R]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts_::2993-3023",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "simp only [Nat.add_sub_cancel]",
+        "prediction": "case (f ∘ g)",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Pi_lean::AlgEquiv_sumArrowEquivProdArrow::9224-9228",
+        "source_file": "Mathlib/Algebra/Algebra/Pi.lean",
+        "target": "simp",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_TransferInstance_lean::Equiv_algEquiv_symm_apply::2336-2361",
+        "source_file": "Mathlib/Algebra/Algebra/TransferInstance.lean",
+        "target": "letI := Equiv.algebra R e",
+        "prediction": "variable (R) in",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsStrictlyPositive_smul::4765-4825",
+        "source_file": "Mathlib/Algebra/Algebra/StrictPositivity.lean",
+        "target": "exact hunit.isStrictlyPositive (smul_nonneg hc.le ha.nonneg)",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts::2470-2556",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "rw [sum_Ico_by_parts f g (Nat.pos_of_ne_zero hn), sum_range_zero, smul_zero, sub_zero]",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4038-4122",
+        "source_file": "Mathlib/Algebra/Category/Grp/AB.lean",
+        "target": "change _ = (_ ≫ limit.π (Discrete.functor fun j ↦ Y.obj { as := j }) ⟨j⟩) _",
+        "prediction": "set_option backward.defeqAttrib.useBackward true in",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_multisetSum_map::6070-6091",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "rcases s with ⟨l⟩",
+        "prediction": "f g : α → ℤ",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3026-3099",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "obtain ⟨S, hSgen, hSmax⟩ := Submonoid.exists_minimal_closure_eq_top M",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_ModEq_prod_one::2872-2896",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using ModEq.prod h",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::CommAlgCat_reflectsIsomorphisms_forget::6750-6775",
+        "source_file": "Mathlib/Algebra/Category/CommAlgCat/Basic.lean",
+        "target": "exact (isoMk e).isIso_hom",
+        "prediction": "variable {R : Type u} [CommAlgCat R]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_ModEq_multisetSum_map::2225-2246",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "rcases s with ⟨l⟩",
+        "prediction": "f g : α → ℕ",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_id_apply::4825-4829",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "simp",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_comp_apply::5106-5110",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "simp",
+        "prediction": "M N O : SemimoduleCat R",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts::2441-2465",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "simp only [range_eq_Ico]",
+        "prediction": "n",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_prod_modEq_single::3799-3841",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "apply Finset.prod_eq_single <;> assumption",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_Basic_lean::AlgCat_intEquivalence::11162-11181",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/Basic.lean",
+        "target": "NatIso.ofComponents",
+        "prediction": "AlgEquiv.ofRingEquiv ⋯",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3321-3330",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "mk_sub_mk",
+        "prediction": "IsUnit ((algebraMap R A) r, (algebraMap R B) r) - (a, b).1 ∧",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4589-4621",
+        "source_file": "Mathlib/Algebra/Category/Grp/AB.lean",
+        "target": "AddCommGrpCat.epi_iff_surjective",
+        "prediction": "set_option backward.defeqAttrib.useBackward true in",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4316-4406",
+        "source_file": "Mathlib/Algebra/Category/Grp/AB.lean",
+        "target": "suffices Epi (iX.hom ≫ (iX.inv ≫ lim.map f ≫ iY.hom) ≫ iY.inv) by simpa using this",
+        "prediction": "set_option backward.defeqAttrib.useBackward true in",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_ModEq_listProd_one::1144-1174",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using listProd_map_one h",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_TransferInstance_lean::Equiv_algEquiv::1848-1854",
+        "source_file": "Mathlib/Algebra/Algebra/TransferInstance.lean",
+        "target": "intros",
+        "prediction": "variable (e : α ≃ β)",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_prod_modEq_single::7748-7775",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "apply Finset.prod_eq_single",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_subsingleton_of_isZero::11336-11385",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "refine subsingleton_of_forall_eq 0 (fun x ↦ ?_)",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_TensorAlgebra_lean::AlgCat_tensorAlgebraAdj::1676-1680",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/TensorAlgebra.lean",
+        "target": "simp",
+        "prediction": "x✝³ x✝² : AlgCat R",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3248-3260",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "resolventSet",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      }
+    ]
+  },
+  "lora": {
+    "model": "lora",
+    "attempted": 50,
+    "exact_matches": 0,
+    "exact_match_accuracy": 0.0,
+    "silent_predictions": 2,
+    "wilson95": [
+      0.0,
+      0.07135003417431873
+    ],
+    "inference_seconds": 134.18307183599973,
+    "examples": [
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Presheaf_Limits_lean::PresheafOfModules_evaluationJointlyReflectsLimits::1672-1719",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Presheaf/Limits.lean",
+        "target": "exact (hc X).fac ((evaluation R X).mapCone s) j",
+        "prediction": "Proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3286-3301",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "Prod.isUnit_iff",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3741-3793",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "obtain ⟨a, b, hr, ha, hb⟩ := hrirred <| by simpa",
+        "prediction": "r",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_HopfAlgCat_Monoidal_lean::HopfAlgCat_MonoidalCategory_inducingFunctorData::2181-2184",
+        "source_file": "Mathlib/Algebra/Category/HopfAlgCat/Monoidal.lean",
+        "target": "rfl",
+        "prediction": "module HopfAlgCat.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.TensorProduct.Tensor",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_multisetProd_map::5587-5622",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using listProd_map (l := l) h",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Subalgebra_MulOpposite_lean::Subalgebra_unop_adjoin::4922-4940",
+        "source_file": "Mathlib/Algebra/Algebra/Subalgebra/MulOpposite.lean",
+        "target": "Set.preimage_union",
+        "prediction": "subsemiring.closure",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3175-3196",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "apply compl_injective",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsUnit_isStrictlyPositive_star_right_conjugate_iff::3417-3439",
+        "source_file": "Mathlib/Algebra/Algebra/StrictPositivity.lean",
+        "target": "lift u to Aˣ using hu",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_Ico_by_parts::1402-1472",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "conv in (occs := 3) (f _ • g _) => rw [← sum_range_succ_sub_sum g]",
+        "prediction": "Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.Finset.",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::CommAlgCat_hom_inv_apply::3977-3981",
+        "source_file": "Mathlib/Algebra/Category/CommAlgCat/Basic.lean",
+        "target": "simp",
+        "prediction": "A B : CommAlgCat R",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts_::3059-3063",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "simp",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3251-3337",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "refine (irreducible_subset_of_submonoidClosure_eq_top hSgen).antisymm fun r hrS ↦ ?_",
+        "prediction": "[S]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_TensorAlgebra_lean::AlgCat_tensorAlgebraAdj::1732-1737",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/TensorAlgebra.lean",
+        "target": "dsimp",
+        "prediction": "Proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Pi_quasispectrum_eq::3538-3598",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "simp only [quasispectrum, Set.mem_ofPred_eq, Set.mem_iUnion]",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsUnit_isStrictlyPositive_star_right_conjugate_iff::3442-3513",
+        "source_file": "Mathlib/Algebra/Algebra/StrictPositivity.lean",
+        "target": "rw [← Units.coe_star, Units.isUnit_mul_units, Units.isUnit_units_mul]",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::commAlgCatEquivUnder::7767-7774",
+        "source_file": "Mathlib/Algebra/Category/CommAlgCat/Basic.lean",
+        "target": "inverse",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3964-3974",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "rw [hSgen]",
+        "prediction": "[HH]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Azumaya_Matrix_lean::AlgHom_mulLeftRightMatrix_inv::1351-1383",
+        "source_file": "Mathlib/Algebra/Azumaya/Matrix.lean",
+        "target": "simp [mul_smul, Finset.smul_sum]",
+        "prediction": "[1]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_listSum_zero::5391-5421",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using listSum_map_zero h",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_instReflectsIsomorphismsAddCommMonCatForget_LinearMapIdCarrierAddMonoidHomCarrier::14773-14787",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "infer_instance",
+        "prediction": "Proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_instReflectsIsomorphismsAddCommMonCatForget_LinearMapIdCarrierAddMonoidHomCarrier::14657-14661",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "have",
+        "prediction": "",
+        "exact_match": false,
+        "produced_output": false
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CoalgCat_Monoidal_lean::CoalgCat_MonoidalCategory_inducingFunctorData::2074-2077",
+        "source_file": "Mathlib/Algebra/Category/CoalgCat/Monoidal.lean",
+        "target": "rfl",
+        "prediction": "[CoalgCat.Hom.hom]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CoalgCat_Monoidal_lean::CoalgCat_MonoidalCategory_inducingFunctorData::2230-2233",
+        "source_file": "Mathlib/Algebra/Category/CoalgCat/Monoidal.lean",
+        "target": "rfl",
+        "prediction": "CoalgCat.coalg_tactic_1",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_Zero_lean::CommGrpCat_isZero_of_subsingleton::1799-1826",
+        "source_file": "Mathlib/Algebra/Category/Grp/Zero.lean",
+        "target": "rw [this, map_one, map_one]",
+        "prediction": "f",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_Basic_lean::AlgCat_hom_ext_iff::3299-3302",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/Basic.lean",
+        "target": "ext",
+        "prediction": "case (f : Type u) (f : Type u) (f : Type u) in",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts_::2993-3023",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "simp only [Nat.add_sub_cancel]",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Pi_lean::AlgEquiv_sumArrowEquivProdArrow::9224-9228",
+        "source_file": "Mathlib/Algebra/Algebra/Pi.lean",
+        "target": "simp",
+        "prediction": "instance RingEquiv.sumArrowEquivProdArrow α β S where",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_TransferInstance_lean::Equiv_algEquiv_symm_apply::2336-2361",
+        "source_file": "Mathlib/Algebra/Algebra/TransferInstance.lean",
+        "target": "letI := Equiv.algebra R e",
+        "prediction": "Equiv.apply",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_StrictPositivity_lean::IsStrictlyPositive_smul::4765-4825",
+        "source_file": "Mathlib/Algebra/Algebra/StrictPositivity.lean",
+        "target": "exact hunit.isStrictlyPositive (smul_nonneg hc.le ha.nonneg)",
+        "prediction": "isStrictlyPositive",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts::2470-2556",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "rw [sum_Ico_by_parts f g (Nat.pos_of_ne_zero hn), sum_range_zero, smul_zero, sub_zero]",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4038-4122",
+        "source_file": "Mathlib/Algebra/Category/Grp/AB.lean",
+        "target": "change _ = (_ ≫ limit.π (Discrete.functor fun j ↦ Y.obj { as := j }) ⟨j⟩) _",
+        "prediction": "[edit] 10.1.2.2.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_ModEq_multisetSum_map::6070-6091",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "rcases s with ⟨l⟩",
+        "prediction": "mod_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_AffineMonoid_Irreducible_lean::Submonoid_closure_irreducible::3026-3099",
+        "source_file": "Mathlib/Algebra/AffineMonoid/Irreducible.lean",
+        "target": "obtain ⟨S, hSgen, hSmax⟩ := Submonoid.exists_minimal_closure_eq_top M",
+        "prediction": "[CancelCommMonoid M]",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_ModEq_prod_one::2872-2896",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using ModEq.prod h",
+        "prediction": "mod_eq_f",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_CommAlgCat_Basic_lean::CommAlgCat_reflectsIsomorphisms_forget::6750-6775",
+        "source_file": "Mathlib/Algebra/Category/CommAlgCat/Basic.lean",
+        "target": "exact (isoMk e).isIso_hom",
+        "prediction": "[edit] 10.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_ModEq_multisetSum_map::2225-2246",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "rcases s with ⟨l⟩",
+        "prediction": "mod_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_id_apply::4825-4829",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "simp",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_comp_apply::5106-5110",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "simp",
+        "prediction": "Proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_Module_lean::Finset_sum_range_by_parts::2441-2465",
+        "source_file": "Mathlib/Algebra/BigOperators/Module.lean",
+        "target": "simp only [range_eq_Ico]",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_prod_modEq_single::3799-3841",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "apply Finset.prod_eq_single <;> assumption",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_Basic_lean::AlgCat_intEquivalence::11162-11181",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/Basic.lean",
+        "target": "NatIso.ofComponents",
+        "prediction": "AlgEquiv.ofRingEquiv.toAlgebraIso.hom",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3321-3330",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "mk_sub_mk",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4589-4621",
+        "source_file": "Mathlib/Algebra/Category/Grp/AB.lean",
+        "target": "AddCommGrpCat.epi_iff_surjective",
+        "prediction": "X Y : Discrete J ⥤ AddCommGrpCat",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_Grp_AB_lean::instHasExactLimitsOfShapeDiscreteAddCommGrpCat::4316-4406",
+        "source_file": "Mathlib/Algebra/Category/Grp/AB.lean",
+        "target": "suffices Epi (iX.hom ≫ (iX.inv ≫ lim.map f ≫ iY.hom) ≫ iY.inv) by simpa using this",
+        "prediction": "[edit] 10.1.2.2.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Nat_ModEq_listProd_one::1144-1174",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "simpa using listProd_map_one h",
+        "prediction": "mod_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_eq_",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_TransferInstance_lean::Equiv_algEquiv::1848-1854",
+        "source_file": "Mathlib/Algebra/Algebra/TransferInstance.lean",
+        "target": "intros",
+        "prediction": "module Equiv.algebra.semiring.eqiv",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_BigOperators_ModEq_lean::Int_prod_modEq_single::7748-7775",
+        "source_file": "Mathlib/Algebra/BigOperators/ModEq.lean",
+        "target": "apply Finset.prod_eq_single",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_ModuleCat_Semi_lean::SemimoduleCat_subsingleton_of_isZero::11336-11385",
+        "source_file": "Mathlib/Algebra/Category/ModuleCat/Semi.lean",
+        "target": "refine subsingleton_of_forall_eq 0 (fun x ↦ ?_)",
+        "prediction": "AddCommMonoid",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Category_AlgCat_TensorAlgebra_lean::AlgCat_tensorAlgebraAdj::1676-1680",
+        "source_file": "Mathlib/Algebra/Category/AlgCat/TensorAlgebra.lean",
+        "target": "simp",
+        "prediction": "AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.AlgCat.Alg",
+        "exact_match": false,
+        "produced_output": true
+      },
+      {
+        "example_id": "Mathlib_Algebra_Algebra_Spectrum_Pi_lean::Prod_spectrum_eq::3248-3260",
+        "source_file": "Mathlib/Algebra/Algebra/Spectrum/Pi.lean",
+        "target": "resolventSet",
+        "prediction": "proof",
+        "exact_match": false,
+        "produced_output": true
+      }
+    ]
+  }
+}

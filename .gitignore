@@ -5,7 +5,6 @@ lean/.lake/
 data/cache/
 data/mathlib-info-tree-*/
 checkpoints/
-experiments/mathlib-info-tree-lora-*/
 # Trainer artifacts are reproducible from the pinned model revision: the
 # adapter weights, the optimizer/scheduler/rng state, and the tokenizer copy.
 # The run's own description (README, adapter_config, trainer_state) stays
