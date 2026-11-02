@@ -1,111 +1,65 @@
 #!/usr/bin/env python3
-"""Filter tactic predictions to only use valid lemmas."""
+"""Inspect the lemma pre-filter used by bounded search.
 
+This is a thin wrapper around :mod:`neuralproof.lemmas`; the extraction and
+resolution logic lives in the package so the search path and offline analysis
+cannot drift apart.  Filtering is a budget saver, not a validity check: a
+tactic it accepts may still be rejected by Lean.
+
+    python scripts/filter_lemmas.py "rw [List.map_smul_eq]"
+    python scripts/filter_lemmas.py --index data/lemma_index.json.gz "rw [not_a_lemma]"
+"""
+from __future__ import annotations
+
+import argparse
 import json
-import re
+import sys
 from pathlib import Path
 
-LEMMA_INDEX_PATH = Path("data/lemma_index.json")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from neuralproof.lemmas import (  # noqa: E402
+    extract_symbol_heads,
+    filter_tactic as _filter_tactic,
+    is_known_symbol,
+    load_lemma_index,
+)
 
 
-def load_lemma_index():
-    with open(LEMMA_INDEX_PATH) as f:
-        lemmas = json.load(f)
-    return set(lemmas)
+def extract_lemmas_from_tactic(tactic: str) -> list[str]:
+    """Backwards-compatible alias for the shared extractor."""
+    return extract_symbol_heads(tactic)
 
 
-def extract_lemmas_from_tactic(tactic: str):
-    """Extract lemma names from tactic strings."""
-    if not tactic or not tactic.strip():
-        return []
-    
-    lemmas = []
-    tactic = tactic.strip()
-    
-    # Pattern 1: rw [lemma1, lemma2, ← lemma3]
-    rw_pattern = r'\b(?:rw|rewrite|erw)\b.*?\[(.*?)\]'
-    for match in re.finditer(rw_pattern, tactic, re.DOTALL):
-        content = match.group(1)
-        parts = re.split(r',', content)
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            part = re.sub(r'^[←→<\-]+\s*', '', part)
-            part = re.sub(r'\s*[←→<\-]+$', '', part)
-            part = re.sub(r'^@+\s*', '', part)
-            # Extract the base lemma name
-            # Could be namespaced like Module.lemma or just lemma
-            if re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', part):
-                # Get the last component for checking
-                lemmas.append(part)
-    
-    # Pattern 2: apply/exact/refine lemma_name
-    for tactic_name in ['apply', 'exact', 'refine']:
-        pattern = rf'\b{tactic_name}\b\s+(@?[a-zA-Z_][a-zA-Z0-9_.]+)'
-        for match in re.finditer(pattern, tactic):
-            lemmas.append(match.group(1).lstrip('@'))
-    
-    # Pattern 3: simp [lemma1, lemma2]
-    simp_pattern = r'\bsimp\b.*?\[(.*?)\]'
-    for match in re.finditer(simp_pattern, tactic, re.DOTALL):
-        content = match.group(1)
-        parts = re.split(r'[,\s]+', content)
-        for part in parts:
-            part = part.strip()
-            if not part or part in ['only', '-', '*']:
-                continue
-            part = re.sub(r'^[←→<\-]+\s*', '', part)
-            if re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', part) and len(part) > 2:
-                lemmas.append(part)
-    
-    # Pattern 4: simpa using/by lemma
-    simpa_pattern = r'\bsimpa\b.*?(?:using|by)\s+([a-zA-Z_][a-zA-Z0-9_.]+)'
-    for match in re.finditer(simpa_pattern, tactic):
-        lemmas.append(match.group(1))
-    
-    # Deduplicate
-    seen = set()
-    unique_lemmas = []
-    for l in lemmas:
-        if l not in seen:
-            seen.add(l)
-            unique_lemmas.append(l)
-    
-    return unique_lemmas
+def is_valid_lemma(name: str, lemma_index) -> bool:
+    """Backwards-compatible alias for the shared resolver."""
+    return is_known_symbol(name, lemma_index)
 
 
-def is_valid_lemma(lemma, lemma_index):
-    """Check if a lemma exists in the index."""
-    # Check full name
-    if lemma in lemma_index:
-        return True
-    # Check just the base name (last component)
-    base = lemma.split('.')[-1]
-    if base in lemma_index:
-        return True
-    return False
-
-
-def filter_tactic(tactic, lemma_index):
-    """Check if tactic uses only valid lemmas. Returns (valid, reason)."""
-    lemmas = extract_lemmas_from_tactic(tactic)
-    if not lemmas:
+def filter_tactic(tactic: str, lemma_index) -> tuple[bool, str]:
+    """Return ``(valid, reason)`` for one tactic, as the old script did."""
+    result = _filter_tactic(tactic, lemma_index)
+    if not result.symbols:
         return True, "no lemmas"
-    
-    for lem in lemmas:
-        if not is_valid_lemma(lem, lemma_index):
-            return False, f"invalid lemma: {lem}"
-    
-    return True, "all valid"
+    if result.allowed:
+        return True, "all valid"
+    return False, "unknown lemma: " + ", ".join(result.unknown)
 
 
-if __name__ == '__main__':
-    idx = load_lemma_index()
-    print(f"Loaded {len(idx)} lemmas")
-    
-    # Test
-    test_cases = [
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("tactics", nargs="*", help="tactics to check")
+    parser.add_argument("--index", type=Path, help="lemma index (default: data/lemma_index.json.gz)")
+    parser.add_argument("--json", action="store_true", help="print machine-readable output")
+    args = parser.parse_args(argv)
+
+    index = load_lemma_index(args.index, required=args.index is not None)
+    if not index:
+        raise SystemExit(
+            f"lemma index not found at {args.index or 'the default path'}; "
+            "build it with `python scripts/build_lemma_index.py`")
+    tactics = args.tactics or [
         "rw [List.map_smul_eq]",
         "rw [add_comm]",
         "simp only [List.sum]",
@@ -113,6 +67,21 @@ if __name__ == '__main__':
         "rfl",
         "simp",
     ]
-    for t in test_cases:
-        valid, reason = filter_tactic(t, idx)
-        print(f"{valid}: {t} - {reason}")
+    rows = []
+    for tactic in tactics:
+        result = _filter_tactic(tactic, index)
+        rows.append({"tactic": tactic, "allowed": result.allowed,
+                     "symbols": list(result.symbols), "unknown": list(result.unknown)})
+    if args.json:
+        print(json.dumps(rows, indent=2))
+    else:
+        print(f"Loaded {len(index)} names from {args.index or 'data/lemma_index.json.gz'}")
+        for row in rows:
+            status = "ok" if row["allowed"] else "refuse"
+            detail = ", ".join(row["unknown"]) or "no unresolved symbols"
+            print(f"{status:6} {row['tactic']}  ({detail})")
+    return 0 if all(row["allowed"] for row in rows) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

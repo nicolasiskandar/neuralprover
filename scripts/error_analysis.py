@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Error analysis for the 1-epoch LoRA eval on the InfoTree corpus."""
 
+import argparse
 import json
 import collections
+import sys
 from pathlib import Path
 
 EVAL_PATH = Path("experiments/mathlib-info-tree-lora-200-1epoch-canonical/tactic-eval-full-heldout.json")
@@ -77,7 +79,20 @@ def goal_complexity(goal_state):
     }
 
 
-def main():
+def main(args=None):
+    global EVAL_PATH, EXAMPLES_PATH, OUT_PATH
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--eval", type=Path, default=EVAL_PATH,
+                        help="tactic-eval JSON produced by evaluate-tactics")
+    parser.add_argument("--examples", type=Path, default=EXAMPLES_PATH,
+                        help="JSONL corpus with example_id, context, and goal_state")
+    parser.add_argument("--output", type=Path, default=OUT_PATH,
+                        help="Markdown output path")
+    namespace = parser.parse_args(args)
+    EVAL_PATH = namespace.eval
+    EXAMPLES_PATH = namespace.examples
+    OUT_PATH = namespace.output
+
     print("# Error Analysis: 1-Epoch LoRA on InfoTree Corpus")
     print(f"\n**Eval file:** {EVAL_PATH}")
     print(f"**Examples file:** {EXAMPLES_PATH}")
@@ -331,16 +346,10 @@ def main():
     print(f"3. **Best performing families:** {', '.join('`'+f+'`' for f,_ in sorted(family_stats.items(), key=lambda x: x[1]['correct']/x[1]['total'] if x[1]['total']>=2 else 0, reverse=True)[:3])}")
     print(f"4. **Complexity:** The model seems to work best on simpler goals with fewer hypotheses.")
     print()
-    
-    # Write to file
-    with open(OUT_PATH, 'w') as f:
-        # Redirect stdout to file by running again - easier to just write
-        pass
 
 
 if __name__ == '__main__':
     # Run and capture output
-    import sys
     from io import StringIO
     old_stdout = sys.stdout
     sys.stdout = StringIO()
@@ -349,8 +358,8 @@ if __name__ == '__main__':
         output = sys.stdout.getvalue()
     finally:
         sys.stdout = old_stdout
-    
+
     print(output)
-    with open(OUT_PATH, 'w') as f:
-        f.write(output)
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUT_PATH.write_text(output)
     print(f"\n\nAnalysis written to {OUT_PATH}", file=sys.stderr)

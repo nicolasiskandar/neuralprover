@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
-"""Analyze lemma usage patterns for failing tactic families."""
+"""Analyze lemma usage patterns for failing tactic families.
 
+The lemma extractor is imported from :mod:`neuralproof.lemmas`, so this report
+cannot diverge from the pre-filter that search actually applies.  Paths are
+explicit; every default names a reproducible artifact under `experiments/`.
+"""
+
+import argparse
 import json
 import re
 import collections
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from neuralproof.lemmas import extract_symbol_heads  # noqa: E402
 
 EVAL_PATH = Path("experiments/mathlib-info-tree-lora-200-1epoch-canonical/tactic-eval-full-heldout.json")
 EXAMPLES_PATH = Path("data/mathlib-info-tree-200/examples.jsonl")
@@ -13,72 +25,9 @@ SEARCH_TRACE_PATH = Path("/tmp/search-lora-n100-w8")
 OUT_PATH = Path("experiments/mathlib-info-tree-lora-200-1epoch-canonical/lemma_analysis.md")
 
 
-def extract_lemmas_from_tactic(tactic: str):
-    """Extract lemma names from tactic strings."""
-    if not tactic or not tactic.strip():
-        return []
-    
-    lemmas = []
-    tactic = tactic.strip()
-    
-    # Pattern 1: rw [lemma1, lemma2, ← lemma3] or rw [lemma1 lemma2]
-    rw_pattern = r'\b(?:rw|rewrite|erw)\b.*?\[(.*?)\]'
-    for match in re.finditer(rw_pattern, tactic, re.DOTALL):
-        content = match.group(1)
-        # Split by commas, but be careful about nested brackets
-        # Simple split
-        parts = re.split(r',', content)
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            # Remove arrows
-            part = re.sub(r'^[←→<\-]+\s*', '', part)
-            part = re.sub(r'\s*[←→<\-]+$', '', part)
-            # Remove @
-            part = re.sub(r'^@+\s*', '', part)
-            # Remove simp lemmas like simp only [lemma] - keep the lemma
-            # Skip if it's just numbers or other syntax
-            if re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', part):
-                lemmas.append(part)
-            elif '.' in part and re.match(r'^[a-zA-Z_][a-zA-Z0-9_.\'\[\]]*$', part):
-                # Could be namespaced
-                # Take the main lemma name
-                lemmas.append(part)
-    
-    # Pattern 2: apply lemma_name or exact lemma_name
-    for tactic_name in ['apply', 'exact', 'refine', 'intro']:
-        pattern = rf'\b{tactic_name}\b\s+(@?[a-zA-Z_][a-zA-Z0-9_.]+)'
-        for match in re.finditer(pattern, tactic):
-            lemmas.append(match.group(1).lstrip('@'))
-    
-    # Pattern 3: simp [lemma1, lemma2]
-    simp_pattern = r'\bsimp\b.*?\[(.*?)\]'
-    for match in re.finditer(simp_pattern, tactic, re.DOTALL):
-        content = match.group(1)
-        parts = re.split(r'[,\s]+', content)
-        for part in parts:
-            part = part.strip()
-            if not part or part in ['only', '-', '*']:
-                continue
-            part = re.sub(r'^[←→<\-]+\s*', '', part)
-            if re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', part) and len(part) > 2:
-                lemmas.append(part)
-    
-    # Pattern 4: simpa using lemma
-    simpa_pattern = r'\bsimpa\b.*?(?:using|by)\s+([a-zA-Z_][a-zA-Z0-9_.]+)'
-    for match in re.finditer(simpa_pattern, tactic):
-        lemmas.append(match.group(1))
-    
-    # Deduplicate while preserving order
-    seen = set()
-    unique_lemmas = []
-    for l in lemmas:
-        if l not in seen:
-            seen.add(l)
-            unique_lemmas.append(l)
-    
-    return unique_lemmas
+def extract_lemmas_from_tactic(tactic: str) -> list[str]:
+    """Backwards-compatible alias for the shared extractor."""
+    return extract_symbol_heads(tactic)
 
 
 def tactic_head(tactic):
@@ -106,7 +55,26 @@ def lemma_in_text(lemma, text):
     return False
 
 
-def main():
+def main(args=None):
+    global EVAL_PATH, EXAMPLES_PATH, TRAIN_PATH, SEARCH_TRACE_PATH, OUT_PATH
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--eval", type=Path, default=EVAL_PATH,
+                        help="tactic-eval JSON produced by evaluate-tactics")
+    parser.add_argument("--examples", type=Path, default=EXAMPLES_PATH,
+                        help="JSONL corpus with example_id, context, and goal_state")
+    parser.add_argument("--train", type=Path, default=TRAIN_PATH,
+                        help="preprocessed JSONL training split")
+    parser.add_argument("--search-trace", type=Path, default=SEARCH_TRACE_PATH,
+                        help="optional JSONL search trace to summarize")
+    parser.add_argument("--output", type=Path, default=OUT_PATH,
+                        help="Markdown output path")
+    namespace = parser.parse_args(args)
+    EVAL_PATH = namespace.eval
+    EXAMPLES_PATH = namespace.examples
+    TRAIN_PATH = namespace.train
+    SEARCH_TRACE_PATH = namespace.search_trace
+    OUT_PATH = namespace.output
+
     print("# Lemma Usage Analysis")
     print()
     
@@ -340,14 +308,9 @@ def main():
     print("3. **Two-Stage Prediction** - First predict tactic family (model is decent at this), then separately predict/retrieve lemma arguments. The tactic family prediction seems more learnable than lemma selection.")
     print("4. **Better Training Data** - Focus on examples where lemmas are in context or where lemma selection is clear. Oversample `rw`/`apply` examples with lemmas that appear in context.")
     print()
-    
-    # Write to file
-    with open(OUT_PATH, 'w') as f:
-        pass
 
 
 if __name__ == '__main__':
-    import sys
     from io import StringIO
     old_stdout = sys.stdout
     sys.stdout = StringIO()
@@ -356,8 +319,8 @@ if __name__ == '__main__':
         output = sys.stdout.getvalue()
     finally:
         sys.stdout = old_stdout
-    
+
     print(output)
-    with open(OUT_PATH, 'w') as f:
-        f.write(output)
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUT_PATH.write_text(output)
     print(f"\n\nAnalysis written to {OUT_PATH}", file=sys.stderr)

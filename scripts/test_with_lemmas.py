@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-from neuralproof.models.predictor import load_hf_predictor
+"""Probe model predictions with the shared lemma index and prompt formatter."""
 from neuralproof.lean.client import ProofState
-import json
+from neuralproof.lemmas import load_lemma_index
+from neuralproof.models.predictor import load_hf_predictor
 
-# Load lemma index
-with open('data/lemma_index.json') as f:
-    lemma_index = set(json.load(f))
+lemma_index = load_lemma_index(required=True)
 
 predictor = load_hf_predictor(
     "HuggingFaceTB/SmolLM2-135M",
