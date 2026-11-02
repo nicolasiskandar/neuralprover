@@ -46,3 +46,14 @@ neuralproof evaluate-tactics \
 342 is the number of eligible rows (446 held out, minus 33 non-tactic targets and 71 focus-scope rows), so `--limit 342` scores the whole eligible set rather than a sample; a smaller limit scores a deterministic pseudo-random subset chosen by the seed.
 
 The result records `heldout_examples`, `excluded_non_tactic_targets`, `excluded_focus_scope`, `sample_size`, and, per model, `exact_matches` alongside `silent_predictions`. Report the silent count with the accuracy: a run in which the model answered nothing and a run in which the model answered wrongly are different findings.
+
+The lemma-name index is a generated artifact pinned to the same Mathlib revision:
+
+```bash
+python scripts/build_lemma_index.py
+python scripts/check_lemma_filter.py --limit 342 --output experiments/lemma-filter-report.json
+```
+
+The builder runs `lake env lean --run NeuralProof/DumpDeclarations.lean` from `lean/`, sorts/deduplicates the constant names, adds each name's last component, and writes `data/lemma_index.json.gz`. `data/lemma_index.meta.json` records the dump command, Mathlib revision, Lean toolchain, constant and basename counts, dump/output SHA-256, code revision, and whether the tree was dirty. To rebuild from a captured dump without invoking Lean, pass `--from-file <dump>`. The index is a name set, not applicability evidence; the opt-in `--filter-invalid-lemmas` flag on `prove`/`evaluate` still sends every accepted candidate to Lean. `scripts/check_lemma_filter.py` exits non-zero when the number of held-out source tactics rejected by the filter exceeds `--max-false-rejects` (default 0); the current index rejects 0/342 targets and 62/342 adapter predictions, losing none of the 21 correct predictions.
+
+Search artifacts record `rejected_unknown_lemmas` next to `tactic_calls`, `invalid_tactics`, and `timeouts`, so a filtered run cannot be mistaken for an unfiltered one. The filter is off by default; a run that asks for it and cannot find the index fails rather than silently running unfiltered.

@@ -103,6 +103,19 @@ The static predictor is a testing baseline, not a language model. `neuralproof.m
 
 `evaluate` proves whole theorems and therefore needs a `theorem` header per row; a mined InfoTree row carries a goal state instead and is rejected with a message pointing at `evaluate-tactics`.
 
+### Lemma pre-filter (opt-in)
+
+`prove` and `evaluate` accept `--filter-invalid-lemmas`, which refuses a candidate before it reaches Lean when it names an identifier absent from both the pinned Mathlib name index and the current context/goal state. It is **off by default**; existing runs are unchanged. The filter is a budget heuristic, not a correctness check: a name can exist and still not apply, so Lean remains the acceptance authority for every tactic that is tried.
+
+The index is generated from the pinned environment, not maintained by hand:
+
+```bash
+python scripts/build_lemma_index.py        # writes data/lemma_index.json.gz + .meta.json
+python scripts/check_lemma_filter.py --limit 342
+```
+
+`data/lemma_index.meta.json` records the Mathlib revision, Lean toolchain, dump hash, command, row counts, and output SHA-256. The index contains every constant name printed by Lean plus each name's last component, so an unqualified reference such as `range_eq_Ico` can resolve to `Finset.range_eq_Ico`. Indexing last components deliberately accepts some namespaces that would not elaborate; that only costs a Lean call, whereas dropping a name would produce a false reject. The held-out source tactics in the 342-row diagnostic are all accepted, while 62 of the 342 one-epoch LoRA predictions are refused and none of the 21 correct predictions is lost. Those numbers measure filter plumbing; they are not a proof-solving result.
+
 ## Soundness and current limits
 
 The Lean client starts a fresh compiler process per tactic, replays the complete prefix, and asks Lean to print goals. This isolates candidate failures but costs seconds per cold invocation; it is not a persistent REPL. A tactic transition that closes the goal is accepted only after the reconstructed placeholder-free declaration compiles. `sorry` and `admit` are rejected by the final verifier. Multiple goals can be replayed, but state identity is currently the tactic prefix, not semantic environment equivalence; deduplication by printed goals is deliberately not used.
