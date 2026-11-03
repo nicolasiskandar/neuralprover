@@ -115,7 +115,7 @@ Lexical retrieval is **inadequate** as a drop-in source of lemma arguments.
 - **The aggregate is clustered.** The 84 applicable rows come from only 14
   source files. 18 of the 29 hits at 20 come from one file,
   `Mathlib/Algebra/BigOperators/ModEq.lean`, and only 8 files contribute any
-  hit. The 100% `simpa` result is 17 near-duplicate `listSum`/`listProd`
+  hit. The 100% `simpa` result is 18 of 19 near-duplicate `listSum`/`listProd`
   declarations from that one module, not general retrieval ability.
 - **The families that need help are the ones retrieval misses.** `apply`,
   `exact`, `refine`, and `obtain` are at 0% at every cutoff. `rw` reaches 26.1%
