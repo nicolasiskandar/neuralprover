@@ -45,5 +45,7 @@ python -m neuralproof.cli evaluate-tactics \
 
 Exact string match of a single-line source tactic is not proof success; the
 contexts have not been independently replayed. No theorem-solving claim follows
-from these numbers. `lemma_analysis.md` predates the current shared extractor
-and is retained as the historical analysis for this run.
+from these numbers. `lemma_analysis.md` was regenerated with the current shared
+extractor (`neuralproof.lemmas.extract_symbol_heads`); it now loads 2,044 unique
+training lemmas and points to the retrieval-feasibility study rather than
+recommending retrieval as if it had already been validated.

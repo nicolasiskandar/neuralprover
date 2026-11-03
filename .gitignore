@@ -4,6 +4,9 @@ __pycache__/
 lean/.lake/
 data/cache/
 data/mathlib-info-tree-*/
+# The theorem-statement corpus is reproducible from the pinned Lean/Mathlib
+# dump commands recorded in its metadata; keep the generated gzip out of git.
+data/lemma_statements.jsonl.gz
 checkpoints/
 # Trainer artifacts are reproducible from the pinned model revision: the
 # adapter weights, the optimizer/scheduler/rng state, and the tokenizer copy.

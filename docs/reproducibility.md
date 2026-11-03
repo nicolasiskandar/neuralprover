@@ -57,3 +57,17 @@ python scripts/check_lemma_filter.py --limit 342 --output experiments/lemma-filt
 The builder runs `lake env lean --run NeuralProof/DumpDeclarations.lean` from `lean/`, sorts/deduplicates the constant names, adds each name's last component, and writes `data/lemma_index.json.gz`. `data/lemma_index.meta.json` records the dump command, Mathlib revision, Lean toolchain, constant and basename counts, dump/output SHA-256, code revision, and whether the tree was dirty. To rebuild from a captured dump without invoking Lean, pass `--from-file <dump>`. The index is a name set, not applicability evidence; the opt-in `--filter-invalid-lemmas` flag on `prove`/`evaluate` still sends every accepted candidate to Lean. `scripts/check_lemma_filter.py` exits non-zero when the number of held-out source tactics rejected by the filter exceeds `--max-false-rejects` (default 0); the current index rejects 0/342 targets and 62/342 adapter predictions, losing none of the 21 correct predictions.
 
 Search artifacts record `rejected_unknown_lemmas` next to `tactic_calls`, `invalid_tactics`, and `timeouts`, so a filtered run cannot be mistaken for an unfiltered one. The filter is off by default; a run that asks for it and cannot find the index fails rather than silently running unfiltered.
+
+The retrieval-feasibility study uses a separate theorem-statement corpus. Rebuild it with:
+
+```bash
+python scripts/build_lemma_statements.py \
+  --kinds theorem \
+  --output data/lemma_statements.jsonl.gz \
+  --meta data/lemma_statements.meta.json
+python scripts/evaluate_retrieval.py \
+  --corpus data/lemma_statements.jsonl.gz \
+  --output-dir experiments/retrieval-feasibility
+```
+
+Without `--from-file`, the builder runs the two Lean dumpers from `lean/`: `lake env lean --run NeuralProof/DumpStatements.lean --import Mathlib --kinds theorem` and `lake env lean --run NeuralProof/DumpModules.lean --import Mathlib`. `data/lemma_statements.meta.json` records both commands, the Mathlib revision, Lean toolchain, input/output SHA-256, filter counts, and the working-tree state. To rebuild from captured dumps without importing Mathlib again, pass `--from-file <statements.jsonl>` and `--modules-file <modules.tsv>`. The corpus is retrieval input: types are delaborated, not re-elaborated, and a retrieval hit is not a verified lemma application. See `experiments/retrieval-feasibility/README.md` for the measurement and its limitations.
