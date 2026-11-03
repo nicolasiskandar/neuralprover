@@ -127,8 +127,10 @@ Lexical retrieval is **inadequate** as a drop-in source of lemma arguments.
 - **Statement text helps.** Name + type roughly triples name-only recall at 20
   (34.5% vs 10.7%), so the type is carrying real signal and should stay in any
   future index.
-- **The goal target is the best query.** Full goal and context + goal do not
-  beat it; adding context dilutes the terms that identify the lemma.
+- **Query choice barely matters.** The goal target has the best @20 (34.5%),
+  but the full goal state is slightly better at 1/5/10 (7.1% / 33.3% / 33.3%)
+  and context + goal is lower. Extra context does not rescue retrieval; the
+  target expression already carries most of the usable signal.
 - **Coverage is the other ceiling.** Only 24.6% of held-out rows have an
   in-corpus theorem reference at all, so even perfect retrieval could affect at
   most a quarter of these rows.
