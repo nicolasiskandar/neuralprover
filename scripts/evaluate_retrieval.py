@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure lexical lemma retrieval on held-out source targets.
+"""Measure lemma retrieval on held-out source targets.
 
 The primary extraction is the shared :func:`neuralproof.lemmas.extract_symbol_heads`
 used by the pre-filter.  References that appear in the proof state are reported
@@ -8,11 +8,18 @@ statement corpus (definitions, constructors, syntax) are reported separately.
 Only target references that are theorems in the corpus count as retrieval
 opportunities.
 
-Retrieval recall is a diagnostic.  A retrieved name is not a verified lemma
-application, and these numbers are not proof-solving performance.
+Lexical BM25 is always evaluated.  Passing ``--embeddings`` adds a dense index
+over a cached embedding matrix and a reciprocal-rank-fusion hybrid.  Retrieval
+recall is a diagnostic.  A retrieved name is not a verified lemma application,
+and these numbers are not proof-solving performance.
 
     python scripts/evaluate_retrieval.py \
         --corpus data/lemma_statements.jsonl.gz \
+        --output-dir experiments/retrieval-feasibility
+
+    python scripts/evaluate_retrieval.py \
+        --corpus data/lemma_statements.jsonl.gz \
+        --embeddings data/cache/lemma-embeddings/all-MiniLM-L6-v2.npy \
         --output-dir experiments/retrieval-feasibility
 """
 from __future__ import annotations
@@ -28,6 +35,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
+from neuralproof.data.provenance import sha256_file  # noqa: E402
 from neuralproof.lemmas import (  # noqa: E402
     extract_symbol_heads,
     load_lemma_index,
@@ -269,6 +277,113 @@ def summarize(per_row: list[dict]) -> dict[str, Any]:
     return summary
 
 
+def evaluate_dense_and_hybrid(results: dict[str, Any], args, applicable: list[dict],
+                              matcher: "NameMatcher",
+                              module_names: dict[str, set[str]],
+                              bm25_name_type: "BM25Index",
+                              corpus_names: list[str]) -> None:
+    """Add dense-only and hybrid sections to ``results`` in place."""
+    try:
+        import numpy as np
+        from neuralproof.embeddings import DenseIndex, EmbeddingEncoder, RRFRetriever
+    except ImportError as error:  # pragma: no cover - dependency error path
+        raise SystemExit(f"dense retrieval needs numpy: {error}") from error
+
+    meta_path = args.embedding_meta or args.embeddings.with_suffix(".meta.json")
+    if not meta_path.is_file():
+        raise SystemExit(
+            f"missing embedding metadata {meta_path}; run scripts/build_lemma_embeddings.py")
+    meta = json.loads(meta_path.read_text())
+    corpus_sha = sha256_file(args.corpus)
+    if meta.get("corpus_sha256") != corpus_sha:
+        raise SystemExit("the embedding cache was built from a different corpus")
+    if meta.get("rows") != len(corpus_names):
+        raise SystemExit("the embedding cache row count does not match the corpus")
+    if meta.get("output_sha256") != sha256_file(args.embeddings):
+        raise SystemExit("the embedding matrix does not match its recorded digest")
+
+    model = args.dense_model or meta["model"]
+    revision = args.dense_revision or meta["revision"]
+    pooling = args.dense_pooling or meta["pooling"]
+    max_length = args.dense_max_length or meta["max_length"]
+    for label, given in (("model", model), ("revision", revision),
+                         ("pooling", pooling), ("max_length", max_length)):
+        recorded = meta[label]
+        if given != recorded:
+            raise SystemExit(
+                f"--dense-{'max-length' if label == 'max_length' else label} "
+                f"{given!r} does not match the cache ({recorded!r})")
+
+    encoder = EmbeddingEncoder(
+        model, revision, pooling=pooling, max_length=max_length,
+        batch_size=args.dense_batch_size, threads=args.dense_threads)
+    embeddings = np.load(args.embeddings, mmap_mode="r")
+    if embeddings.shape[0] != len(corpus_names):
+        raise SystemExit("the embedding matrix and corpus have different row counts")
+    if embeddings.shape[1] != encoder.dimension:
+        raise SystemExit(
+            f"embedding dimension {embeddings.shape[1]} does not match "
+            f"the encoder ({encoder.dimension})")
+    dense = DenseIndex(corpus_names, embeddings, encoder=encoder,
+                       normalize=not meta.get("normalized", False))
+
+    dense_primary = evaluate(applicable, dense, matcher, module_names,
+                             exclude_module=False, query_key="goal_target")
+    dense_full = evaluate(applicable, dense, matcher, module_names,
+                          exclude_module=False, query_key="query")
+    dense_context = evaluate(applicable, dense, matcher, module_names,
+                             exclude_module=False, query_key="context_query")
+    dense_excluded = evaluate(applicable, dense, matcher, module_names,
+                              exclude_module=True, query_key="goal_target")
+    results["dense"] = {
+        "corpus_documents": dense.size,
+        "primary": summarize(dense_primary),
+        "full_goal": summarize(dense_full),
+        "context_goal": summarize(dense_context),
+        "same_module_excluded": summarize(dense_excluded),
+        "rows": dense_primary,
+    }
+
+    hybrid = RRFRetriever([bm25_name_type, dense], depth=args.hybrid_depth,
+                          k=args.rrf_k)
+    hybrid_primary = evaluate(applicable, hybrid, matcher, module_names,
+                              exclude_module=False, query_key="goal_target")
+    hybrid_full = evaluate(applicable, hybrid, matcher, module_names,
+                           exclude_module=False, query_key="query")
+    hybrid_context = evaluate(applicable, hybrid, matcher, module_names,
+                              exclude_module=False, query_key="context_query")
+    hybrid_excluded = evaluate(applicable, hybrid, matcher, module_names,
+                               exclude_module=True, query_key="goal_target")
+    results["hybrid"] = {
+        "primary": summarize(hybrid_primary),
+        "full_goal": summarize(hybrid_full),
+        "context_goal": summarize(hybrid_context),
+        "same_module_excluded": summarize(hybrid_excluded),
+        "rows": hybrid_primary,
+    }
+
+    results["protocol"]["dense"] = {
+        "model": model,
+        "revision": revision,
+        "pooling": pooling,
+        "max_length": max_length,
+        "normalized": bool(meta.get("normalized", False)),
+        "rows": int(embeddings.shape[0]),
+        "dim": int(embeddings.shape[1]),
+        "embedding_sha256": meta.get("output_sha256"),
+        "corpus_sha256": corpus_sha,
+        "tuning": "none; the model, revision and pooling were fixed before evaluation",
+    }
+    results["protocol"]["hybrid"] = {
+        "fusion": "reciprocal rank fusion",
+        "retrievers": ["bm25 name+type", "dense"],
+        "weights": [1.0, 1.0],
+        "depth": args.hybrid_depth,
+        "rrf_k": args.rrf_k,
+        "tuning": "none; depth and k were fixed before evaluation",
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--examples", type=Path, default=DEFAULT_EXAMPLES)
@@ -279,6 +394,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--limit", type=int, default=0,
                         help="evaluate only the first N eval rows (0 = all)")
+    parser.add_argument("--embeddings", type=Path,
+                        help="cached .npy embedding matrix row-aligned with the corpus")
+    parser.add_argument("--embedding-meta", type=Path,
+                        help="metadata for --embeddings; defaults to <embeddings>.meta.json")
+    parser.add_argument("--dense-model", help="encoder model; defaults to the cache metadata")
+    parser.add_argument("--dense-revision", help="encoder revision; defaults to the cache metadata")
+    parser.add_argument("--dense-pooling", choices=("mean", "cls"),
+                        help="pooling; defaults to the cache metadata")
+    parser.add_argument("--dense-max-length", type=int,
+                        help="token truncation; defaults to the cache metadata")
+    parser.add_argument("--dense-batch-size", type=int, default=128,
+                        help="query batch size for the encoder")
+    parser.add_argument("--dense-threads", type=int, default=0,
+                        help="torch CPU threads; 0 keeps the torch default")
+    parser.add_argument("--hybrid-depth", type=int, default=50,
+                        help="candidates from each retriever before RRF fusion")
+    parser.add_argument("--rrf-k", type=float, default=60.0,
+                        help="RRF damping constant (fixed before evaluation)")
     args = parser.parse_args(argv)
 
     examples = read_examples(args.examples)
@@ -329,8 +462,12 @@ def main(argv: list[str] | None = None) -> int:
     results["out_of_corpus_references"] = dict(
         results["out_of_corpus_references"].most_common())
 
+    bm25_name_type = None
+    module_names: dict[str, set[str]] = {}
     for label, include_type in (("name_only", False), ("name_and_type", True)):
         bm25, module_names = build_index(args.corpus, include_type)
+        if include_type:
+            bm25_name_type = bm25
         goal_rows = evaluate(applicable, bm25, matcher, module_names,
                              exclude_module=False, query_key="goal_target")
         full_goal_rows = evaluate(applicable, bm25, matcher, module_names,
@@ -348,6 +485,10 @@ def main(argv: list[str] | None = None) -> int:
             "rows": goal_rows,
         }
 
+    if args.embeddings is not None:
+        evaluate_dense_and_hybrid(results, args, applicable, matcher,
+                                  module_names, bm25_name_type, corpus_names)
+
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "report.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False) + "\n")
@@ -356,7 +497,8 @@ def main(argv: list[str] | None = None) -> int:
     lines = [
         "# Retrieval Feasibility",
         "",
-        "Lexical BM25 retrieval over Mathlib theorem statements. Recall is a",
+        "Lexical BM25 retrieval over Mathlib theorem statements, plus dense and",
+        "hybrid sections when a cached embedding matrix is supplied. Recall is a",
         "diagnostic; a retrieved name is not a verified lemma application.",
         "",
         "## Coverage",
@@ -423,6 +565,57 @@ def main(argv: list[str] | None = None) -> int:
         table = results[label]["primary"]["recall_references"]
         lines.append(f"| {title} | {table['1']:.1%} | {table['5']:.1%} | "
                      f"{table['10']:.1%} | {table['20']:.1%} |")
+    if args.embeddings is not None:
+        dense_info = results["protocol"]["dense"]
+        hybrid_info = results["protocol"]["hybrid"]
+        lines += [
+            "",
+            "## Dense and hybrid retrieval",
+            "",
+            f"- Encoder: `{dense_info['model']}` at revision "
+            f"`{dense_info['revision']}` ({dense_info['pooling']} pooling, "
+            f"max length {dense_info['max_length']}, "
+            f"embedding SHA-256 `{dense_info['embedding_sha256']}`).",
+            f"- Hybrid: reciprocal rank fusion of BM25 name + type and dense, "
+            f"depth {hybrid_info['depth']}, k={hybrid_info['rrf_k']}, equal weights.",
+            "- The model, revision, pooling, depth and k were fixed before",
+            "  evaluation; nothing was tuned on the held-out targets.",
+            "",
+            "| retriever | query | @1 | @5 | @10 | @20 |",
+            "| :-- | :-- | --: | --: | --: | --: |",
+        ]
+        for label, title in (("dense", "dense"), ("hybrid", "hybrid")):
+            for section, query_title in (("primary", "goal target"),
+                                         ("full_goal", "full goal state"),
+                                         ("context_goal", "context + goal")):
+                table = results[label][section]["recall_rows"]
+                lines.append(f"| {title} | {query_title} | {table['1']:.1%} | "
+                             f"{table['5']:.1%} | {table['10']:.1%} | "
+                             f"{table['20']:.1%} |")
+        lines += [
+            "",
+            "### Dense and hybrid same-module exclusion (goal target)",
+            "",
+            "| retriever | @1 | @5 | @10 | @20 |",
+            "| :-- | --: | --: | --: | --: |",
+        ]
+        for label, title in (("dense", "dense"), ("hybrid", "hybrid")):
+            table = results[label]["same_module_excluded"]["recall_rows"]
+            lines.append(f"| {title} | {table['1']:.1%} | {table['5']:.1%} | "
+                         f"{table['10']:.1%} | {table['20']:.1%} |")
+        lines += [
+            "",
+            "### Dense and hybrid by tactic family (goal target)",
+            "",
+            "| retriever | family | rows | @1 | @5 | @10 | @20 |",
+            "| :-- | :-- | --: | --: | --: | --: | --: |",
+        ]
+        for label, title in (("dense", "dense"), ("hybrid", "hybrid")):
+            for family, row in results[label]["primary"]["by_family"].items():
+                table = row["recall_rows"]
+                lines.append(f"| {title} | `{family}` | {row['rows']} | "
+                             f"{table['1']:.1%} | {table['5']:.1%} | "
+                             f"{table['10']:.1%} | {table['20']:.1%} |")
     lines += [
         "",
         "## Notes",
@@ -440,8 +633,11 @@ def main(argv: list[str] | None = None) -> int:
     ]
     (args.output_dir / "report.md").write_text("\n".join(lines) + "\n")
 
+    summary_keys = ["name_only", "name_and_type"]
+    if args.embeddings is not None:
+        summary_keys += ["dense", "hybrid"]
     print(json.dumps({key: results[key]["primary"]["recall_rows"]
-                      for key in ("name_only", "name_and_type")}, indent=2))
+                      for key in summary_keys}, indent=2))
     print(f"Applicable rows: {len(applicable)}/{len(items)}")
     print(f"Report written to {args.output_dir}")
     return 0

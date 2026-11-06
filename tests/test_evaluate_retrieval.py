@@ -5,10 +5,15 @@ target is the primary query, inaccessible-name markers are not terms, and
 local or out-of-corpus references are not counted as retrieval failures.
 """
 import importlib.util
+import gzip
+import json
+import types
 from pathlib import Path
 
+import numpy as np
 import pytest
 
+import neuralproof.embeddings as embeddings_module
 from neuralproof.retrieval import BM25Index
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -146,3 +151,228 @@ def test_summarize_counts_rows_and_references():
     assert summary["recall_rows"]["1"] == pytest.approx(0.5)
     assert summary["recall_references"]["1"] == pytest.approx(0.5)
     assert summary["by_family"]["rw"]["rows"] == 2
+
+
+DOCUMENTS = [
+    {"name": "Foo.one", "kind": "theorem", "type": "1 = 1", "module": "Mathlib.Foo"},
+    {"name": "Foo.two", "kind": "theorem", "type": "2 = 2", "module": "Mathlib.Foo"},
+    {"name": "Bar.three", "kind": "theorem", "type": "3 = 3", "module": "Mathlib.Bar"},
+]
+
+
+class _FakeEncoder:
+    """Query vectors chosen so the expected dense ranking is explicit."""
+
+    DIM = 3
+
+    def __init__(self, model, revision=None, *, pooling="mean", max_length=128,
+                 batch_size=128, threads=0, quantize=False):
+        self.dimension = self.DIM
+
+    def encode(self, texts):
+        vectors = []
+        for text in texts:
+            vectors.append({
+                "one": [1.0, 0.0, 0.0],
+                "two": [0.0, 1.0, 0.0],
+            }.get(text, [0.0, 0.0, 1.0]))
+        return np.asarray(vectors, dtype=np.float32)
+
+
+def _write_corpus(tmp_path, documents=DOCUMENTS):
+    path = tmp_path / "corpus.jsonl.gz"
+    with gzip.open(path, "wt", encoding="utf-8") as stream:
+        for document in documents:
+            stream.write(json.dumps(document) + "\n")
+    return path
+
+
+def _write_cache(tmp_path, corpus, documents=DOCUMENTS, *, dim=3,
+                 meta_overrides=None):
+    path = tmp_path / "emb.npy"
+    matrix = np.zeros((len(documents), dim), dtype=np.float32)
+    for index in range(len(documents)):
+        matrix[index, index % dim] = 1.0
+    np.save(path, matrix)
+    metadata = {
+        "corpus": str(corpus),
+        "corpus_sha256": evaluator.sha256_file(corpus),
+        "model": "fake-model",
+        "revision": "fake-revision",
+        "pooling": "mean",
+        "max_length": 128,
+        "batch_size": 128,
+        "quantize": False,
+        "normalized": True,
+        "rows": len(documents),
+        "dim": dim,
+        "output_sha256": evaluator.sha256_file(path),
+    }
+    metadata.update(meta_overrides or {})
+    meta_path = tmp_path / "emb.meta.json"
+    meta_path.write_text(json.dumps(metadata))
+    return path, meta_path
+
+
+def _dense_args(embeddings, meta, corpus, **overrides):
+    values = {
+        "corpus": corpus,
+        "embeddings": embeddings,
+        "embedding_meta": meta,
+        "dense_model": None,
+        "dense_revision": None,
+        "dense_pooling": None,
+        "dense_max_length": None,
+        "dense_batch_size": 8,
+        "dense_threads": 0,
+        "hybrid_depth": 50,
+        "rrf_k": 60.0,
+    }
+    values.update(overrides)
+    return types.SimpleNamespace(**values)
+
+
+def _dense_row(example_id, gold, query, family="rw"):
+    return {
+        "row": {
+            "example_id": example_id,
+            "source_declaration": "Target.thm",
+            "source_file": "Mathlib/Target.lean",
+        },
+        "family": family,
+        "gold": gold,
+        "local": [],
+        "query": query,
+        "goal_target": query,
+        "context_query": "context " + query,
+        "target_module": "Mathlib.Target",
+    }
+
+
+@pytest.fixture
+def dense_setup(tmp_path, monkeypatch):
+    monkeypatch.setattr(embeddings_module, "EmbeddingEncoder", _FakeEncoder)
+    corpus = _write_corpus(tmp_path)
+    embeddings, meta = _write_cache(tmp_path, corpus)
+    bm25, module_names = evaluator.build_index(corpus, include_type=True)
+    names = [document["name"] for document in DOCUMENTS]
+    rows = [
+        _dense_row("ex-one", ["Foo.one"], "one"),
+        _dense_row("ex-two", ["Foo.two"], "two", family="simp"),
+    ]
+    return {
+        "corpus": corpus,
+        "embeddings": embeddings,
+        "meta": meta,
+        "bm25": bm25,
+        "module_names": module_names,
+        "corpus_names": names,
+        "matcher": evaluator.NameMatcher(names),
+        "rows": rows,
+    }
+
+
+def run_dense(setup, **overrides):
+    results = {"protocol": {}}
+    evaluator.evaluate_dense_and_hybrid(
+        results, _dense_args(setup["embeddings"], setup["meta"],
+                             setup["corpus"], **overrides),
+        setup["rows"], setup["matcher"], setup["module_names"],
+        setup["bm25"], setup["corpus_names"])
+    return results
+
+
+def test_dense_and_hybrid_sections_are_added_with_recall(dense_setup):
+    results = run_dense(dense_setup)
+
+    for label in ("dense", "hybrid"):
+        assert set(results[label]) >= {
+            "primary", "full_goal", "context_goal", "same_module_excluded",
+            "rows"}
+        assert set(results[label]["primary"]["by_family"]) == {"rw", "simp"}
+        for section in ("primary", "full_goal", "context_goal",
+                        "same_module_excluded"):
+            assert set(results[label][section]["recall_rows"]) == {
+                "1", "5", "10", "20"}
+
+    assert results["dense"]["corpus_documents"] == 3
+
+    # The fake query vectors point directly at the gold declarations.
+    assert results["dense"]["primary"]["recall_rows"]["1"] == 1.0
+    assert results["hybrid"]["primary"]["recall_rows"]["1"] == 1.0
+    assert results["dense"]["rows"][0]["gold"] == ["Foo.one"]
+
+
+def test_dense_protocol_records_the_cache_and_hybrid_settings(dense_setup):
+    results = run_dense(dense_setup)
+
+    dense = results["protocol"]["dense"]
+    assert dense["model"] == "fake-model"
+    assert dense["revision"] == "fake-revision"
+    assert dense["pooling"] == "mean"
+    assert dense["max_length"] == 128
+    assert dense["normalized"] is True
+    assert dense["rows"] == 3
+    assert dense["dim"] == 3
+    assert dense["embedding_sha256"] == evaluator.sha256_file(
+        dense_setup["embeddings"])
+    assert dense["corpus_sha256"] == evaluator.sha256_file(
+        dense_setup["corpus"])
+    assert "fixed before evaluation" in dense["tuning"]
+
+    hybrid = results["protocol"]["hybrid"]
+    assert hybrid["fusion"] == "reciprocal rank fusion"
+    assert hybrid["retrievers"] == ["bm25 name+type", "dense"]
+    assert hybrid["weights"] == [1.0, 1.0]
+    assert hybrid["depth"] == 50
+    assert hybrid["rrf_k"] == 60.0
+    assert "fixed before evaluation" in hybrid["tuning"]
+
+
+@pytest.mark.parametrize(("overrides", "message"), [
+    ({"corpus_sha256": "0" * 64}, "different corpus"),
+    ({"rows": 2}, "row count does not match"),
+    ({"output_sha256": "0" * 64}, "recorded digest"),
+])
+def test_dense_rejects_a_cache_that_does_not_match_the_corpus(
+        dense_setup, tmp_path, overrides, message):
+    corpus = dense_setup["corpus"]
+    documents = DOCUMENTS
+    embeddings, meta = _write_cache(tmp_path, corpus, documents,
+                                    meta_overrides=overrides)
+    dense_setup["embeddings"] = embeddings
+    dense_setup["meta"] = meta
+
+    with pytest.raises(SystemExit, match=message):
+        run_dense(dense_setup)
+
+
+def test_dense_rejects_a_dimension_mismatch(dense_setup, monkeypatch):
+    monkeypatch.setattr(_FakeEncoder, "DIM", 4)
+
+    with pytest.raises(SystemExit, match="embedding dimension"):
+        run_dense(dense_setup)
+
+
+@pytest.mark.parametrize(("argument", "value", "message"), [
+    ("dense_model", "other-model", "--dense-model"),
+    ("dense_revision", "other-revision", "--dense-revision"),
+    ("dense_pooling", "cls", "--dense-pooling"),
+    ("dense_max_length", 64, "--dense-max-length"),
+])
+def test_dense_rejects_query_settings_that_conflict_with_the_cache(
+        dense_setup, argument, value, message):
+    with pytest.raises(SystemExit, match=message):
+        run_dense(dense_setup, **{argument: value})
+
+
+def test_dense_and_hybrid_can_be_reported_for_an_empty_applicable_set(
+        dense_setup):
+    dense_setup["rows"] = []
+
+    results = run_dense(dense_setup)
+
+    assert results["dense"]["primary"]["applicable_rows"] == 0
+    assert results["dense"]["primary"]["recall_rows"] == {
+        "1": 0.0, "5": 0.0, "10": 0.0, "20": 0.0}
+    assert results["hybrid"]["primary"]["applicable_rows"] == 0
