@@ -1,6 +1,6 @@
 # Reproducibility
 
-Lean is pinned at `leanprover/lean4:v4.35.0`. Mathlib is pinned at commit `56a005855ea17e0b0958f73ec801ae140b0a1679`; `lean/lake-manifest.json` locks its transitive dependencies. Set up with `cd lean && lake update && lake build`. Python runtime code currently uses the standard library. Optional training dependencies are version pinned in `pyproject.toml`; installation/model download requires network or a prepopulated cache. For CPU-only training, use the official PyTorch CPU wheel index and explicitly select `torch==2.6.0+cpu` as shown in the README.
+Lean is pinned at `leanprover/lean4:v4.35.0`. Mathlib is pinned at commit `56a005855ea17e0b0958f73ec801ae140b0a1679`; `lean/lake-manifest.json` locks its transitive dependencies. Set up with `cd lean && lake update && lake build`. Core Python runtime code uses the standard library; the optional retrieval path adds NumPy, torch, and transformers, and the training path adds torch, transformers, PEFT, and datasets, all version-pinned or bounded in `pyproject.toml`. Installation/model download requires network or a prepopulated cache. For CPU-only training, use the official PyTorch CPU wheel index and explicitly select `torch==2.6.0+cpu` as shown in the README.
 
 Record command, git revision, Lean version, Python version, model ID and immutable revision, dataset hash, random seed, inference settings, search limits, and hardware in each experiment directory. Do not use the smoke sample to make performance claims. Current test invocation: `pytest` (the `lean` marker selects the cases that invoke the toolchain; `pytest -m "not lean"` runs the rest).
 
@@ -58,16 +58,23 @@ The builder runs `lake env lean --run NeuralProof/DumpDeclarations.lean` from `l
 
 Search artifacts record `rejected_unknown_lemmas` next to `tactic_calls`, `invalid_tactics`, and `timeouts`, so a filtered run cannot be mistaken for an unfiltered one. The filter is off by default; a run that asks for it and cannot find the index fails rather than silently running unfiltered.
 
-The retrieval-feasibility study uses a separate theorem-statement corpus. Rebuild it with:
+The retrieval-feasibility study uses a separate theorem-statement corpus and an optional dense index. Rebuild them with:
 
 ```bash
 python scripts/build_lemma_statements.py \
   --kinds theorem \
   --output data/lemma_statements.jsonl.gz \
   --meta data/lemma_statements.meta.json
+python scripts/build_lemma_embeddings.py \
+  --output data/cache/lemma-embeddings/all-MiniLM-L6-v2.npy
 python scripts/evaluate_retrieval.py \
   --corpus data/lemma_statements.jsonl.gz \
+  --embeddings data/cache/lemma-embeddings/all-MiniLM-L6-v2.npy \
   --output-dir experiments/retrieval-feasibility
 ```
 
-Without `--from-file`, the builder runs the two Lean dumpers from `lean/`: `lake env lean --run NeuralProof/DumpStatements.lean --import Mathlib --kinds theorem` and `lake env lean --run NeuralProof/DumpModules.lean --import Mathlib`. `data/lemma_statements.meta.json` records both commands, the Mathlib revision, Lean toolchain, input/output SHA-256, filter counts, and the working-tree state. To rebuild from captured dumps without importing Mathlib again, pass `--from-file <statements.jsonl>` and `--modules-file <modules.tsv>`. The corpus is retrieval input: types are delaborated, not re-elaborated, and a retrieval hit is not a verified lemma application. See `experiments/retrieval-feasibility/README.md` for the measurement and its limitations.
+Without `--from-file`, the builder runs the two Lean dumpers from `lean/`: `lake env lean --run NeuralProof/DumpStatements.lean --import Mathlib --kinds theorem` and `lake env lean --run NeuralProof/DumpModules.lean --import Mathlib`. `data/lemma_statements.meta.json` records both commands, the Mathlib revision, Lean toolchain, input/output SHA-256, filter counts, and the working-tree state. To rebuild from captured dumps without importing Mathlib again, pass `--from-file <statements.jsonl>` and `--modules-file <modules.tsv>`.
+
+The embedding builder is resumable and writes one normalized float32 row per corpus row. Its cache and metadata stay under ignored `data/cache/lemma-embeddings/`; metadata records the model, immutable revision, pooling, max length, corpus SHA, matrix SHA, and build command. The evaluator fails if the corpus digest, row count, matrix digest, encoder dimension, or model settings disagree with the cache. The dense path needs the optional dependencies from `pip install -e '.[retrieval]'`; the evaluator also uses the pure lexical path without them, but the dense and hybrid sections require NumPy, torch, and transformers.
+
+The corpus and embeddings are retrieval input: types are delaborated, not re-elaborated, and a retrieval hit is not a verified lemma application. See `experiments/retrieval-feasibility/README.md` for the measurement and its limitations.

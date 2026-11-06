@@ -120,9 +120,11 @@ Based on this analysis, and on the retrieval-feasibility measurement:
 
 1. **Retrieval is not yet a solution.** Lexical BM25 over theorem names and
    pretty-printed statements recalled a gold lemma in the top 20 for only
-   34.5% of the 84 applicable held-out rows (name-only: 10.7%). Excluding
-   the target's own module drops that to 9.5%, so the positive result is
-   also partly explained by near-duplicate declarations. See
+   34.5% of the 84 applicable held-out rows (name-only: 10.7%). Dense
+   MiniLM reached 15.5%, and an RRF hybrid reached 36.9% but with worse
+   precision at 1 and 5. Excluding the target's own module leaves 9.5%
+   lexical and 13.1% hybrid, so the positive result is also partly
+   explained by near-duplicate declarations. See
    `experiments/retrieval-feasibility/README.md`; do not present these
    recall numbers as proof-solving performance.
 2. **Constrained decoding is already covered by the pre-filter.** It refuses
@@ -132,9 +134,10 @@ Based on this analysis, and on the retrieval-feasibility measurement:
 3. **Two-stage prediction is still a candidate, conditional on better
    retrieval.** The model is comparatively good at lemma-free tactics
    (`simp`, `ext`, `rfl`), so predicting a skeleton and filling lemma
-   arguments is plausible. The next measurement should be embedding/hybrid
-   retrieval (or a model reranker) on the same 84 rows before any prompt or
-   training change.
+   arguments is plausible. Embedding and hybrid retrieval have now been
+   measured on the same 84 rows and did not materially improve recall, so
+   improve retrieval or change the evaluation before integrating a
+   two-stage design.
 4. **Change the evaluation target too.** Exact match on a source tactic is
    only a diagnostic. A retrieval or two-stage method should be judged by
    kernel-verified next-tactic acceptance or bounded proof search, never by

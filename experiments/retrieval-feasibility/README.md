@@ -3,6 +3,8 @@
 Can Mathlib lemma retrieval supply the lemma arguments that the fine-tuned
 model gets wrong? This study measures that question on the existing held-out
 targets before any retrieval is added to prompts, decoding, or training.
+Lexical BM25, dense sentence embeddings, and a reciprocal-rank-fusion hybrid
+are compared on the same rows.
 
 Recall is a diagnostic. A retrieved name is not a verified lemma application:
 the type may not match, implicit arguments may not be inferable, the rewrite
@@ -29,8 +31,14 @@ proof-solving result.
   context + goal (ablations). Inaccessible-name markers (`✝`) and `case` labels
   are stripped before indexing or querying.
 - **Indexes.** BM25 over the lemma name alone, and over name + pretty-printed
-  type. Both are deterministic and built only from the corpus; no held-out
-  target tactic is used to build or tune them.
+  type. A dense index over the same name + type documents, and a reciprocal
+  rank fusion (RRF) of BM25 name + type and dense. All are built only from the
+  corpus; no held-out target tactic is used to build or tune them.
+- **Dense encoder.** `sentence-transformers/all-MiniLM-L6-v2` at revision
+  `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`, mean pooling, max length 128,
+  L2-normalized float32. Similarity is a dot product. The encoder, revision,
+  pooling, RRF depth 50, and RRF k=60 were fixed before evaluation; none was
+  tuned on the held-out rows.
 - **Matching.** Relaxed matching accepts a qualified suffix or the same last
   component; strict matching requires a qualified-suffix relation. Reference
   level recall counts how many gold references appear in the top *k*.
@@ -60,6 +68,14 @@ dump commands. Private and compiler-generated names (`match_*`, `recOn_*`,
 `casesOn_*`, `brecOn_*`, `below_*`, `_flat_ctor_*`, `ctorIdx_*`, `_proof_*`)
 are dropped. Equation lemmas are retained by default. Types are delaborated,
 not re-elaborated, so the corpus is retrieval input only.
+
+The dense index caches one 384-dimensional vector per corpus row under the
+ignored `data/cache/lemma-embeddings/` directory. The matrix is 361,832 × 384
+float32, SHA-256
+`9628016f26e67be11d4ff5b32cc3bdfcea6ca88aa767cb4799574e81fb49f405`, and its
+metadata records the model, revision, pooling, max length, corpus SHA, and
+build command. The evaluator refuses a cache whose corpus digest, row count,
+matrix digest, encoder dimension, or model settings do not match.
 
 ## Results
 
@@ -104,47 +120,105 @@ By tactic family (name + type, goal target):
 | `simpa` | 19 | 5.3% | 89.5% | 100.0% | 100.0% |
 | `conv` / `conv_lhs` | 2 | 0.0% | 0.0% | 0.0% | 0.0% |
 
+### Dense and hybrid
+
+Dense retrieval uses the same name + type documents. Hybrid fuses BM25
+name + type and dense with RRF (depth 50, k=60, equal weights). Row-level
+recall over the same 84 applicable rows:
+
+| retriever | query | @1 | @5 | @10 | @20 |
+| :-- | :-- | --: | --: | --: | --: |
+| dense | goal target | 2.4% | 11.9% | 14.3% | 15.5% |
+| dense | full goal state | 7.1% | 31.0% | 31.0% | 31.0% |
+| dense | context + goal | 13.1% | 22.6% | 26.2% | 27.4% |
+| hybrid | goal target | 3.6% | 21.4% | 32.1% | **36.9%** |
+| hybrid | full goal state | **16.7%** | 31.0% | 33.3% | 34.5% |
+| hybrid | context + goal | 15.5% | 27.4% | 29.8% | 29.8% |
+
+Dense alone is worse than lexical BM25 on the primary goal-target query at
+every cutoff (15.5% vs 34.5% at 20). Hybrid adds two rows at 20 (31/84 vs
+29/84) but loses early precision: @1 falls from 4.8% to 3.6% and @5 from 28.6%
+to 21.4%, while @10 is unchanged at 32.1%. Reference-level hybrid recall is
+2.1% / 12.9% / 19.3% / 22.9%, versus 2.9% / 17.1% / 19.3% / 20.7% for lexical
+name + type.
+
+Same-module exclusion (goal target):
+
+| retriever | @1 | @5 | @10 | @20 |
+| :-- | --: | --: | --: | --: |
+| dense | 1.2% | 2.4% | 3.6% | 6.0% |
+| hybrid | 1.2% | 6.0% | 8.3% | 13.1% |
+
+The hybrid gains 2 rows at 20 over lexical same-module exclusion (13.1% vs
+9.5%), but remains low. By tactic family, hybrid reaches 26.1% at 20 for `rw`
+(the same as lexical), 23.8% for `simp` (up from 9.5%), 50.0% for `simp_rw`,
+and 94.7% for `simpa` (down from 100%). `apply`, `exact`, `refine`, and
+`obtain` remain at 0% at every cutoff, and dense alone is 0% for `rw`.
+
+The hit set is still clustered. Hybrid has 31 hits at 20 from 8 source files;
+19 of them are in `Mathlib/Algebra/BigOperators/ModEq.lean`. It gains three
+rows over lexical and loses one, and two of the three gains are additional
+`ModEq` declarations. Dense has 13 hits, 9 of them in the same module.
+
 ## Interpretation
 
-Lexical retrieval is **inadequate** as a drop-in source of lemma arguments.
+Lexical, dense, and hybrid retrieval are all **inadequate** as a drop-in source
+of lemma arguments. Dense alone does not improve candidate recall over BM25;
+hybrid buys a small top-20 gain at the cost of early precision.
 
-- **Top-1 is unusable.** 4.8% of applicable rows have a gold lemma at rank 1;
-  even at 20 candidates it is 34.5%. A search that tries 20 retrieved lemmas
-  per goal pays a large Lean budget for a one-in-three chance of including the
-  right name.
+- **Top-1 is unusable.** Lexical name + type has 4.8% of applicable rows with
+  a gold lemma at rank 1; hybrid has 3.6% and dense 2.4%. Even at 20 candidates
+  the best retriever is hybrid at 36.9%. A search that tries 20 retrieved
+  lemmas per goal pays a large Lean budget for a one-in-three chance of
+  including the right name.
+- **Dense is weaker than lexical on statements.** MiniLM embeddings over
+  name + type reach 15.5% at 20 on the goal target, versus 34.5% for BM25.
+  Mathlib statement syntax is dominated by generic typeclass and binder text,
+  so the embedding similarity is not identifying the needed declaration.
+- **Hybrid barely moves the ceiling.** RRF improves @20 from 34.5% to 36.9%
+  (two rows) while reducing @1 from 4.8% to 3.6% and @5 from 28.6% to 21.4%.
+  That is not a better candidate generator at the cutoffs a proof search can
+  afford.
 - **The aggregate is clustered.** The 84 applicable rows come from only 14
-  source files. 18 of the 29 hits at 20 come from one file,
-  `Mathlib/Algebra/BigOperators/ModEq.lean`, and only 8 files contribute any
-  hit. The 100% `simpa` result is 18 of 19 near-duplicate `listSum`/`listProd`
-  declarations from that one module, not general retrieval ability.
+  source files. Lexical has 29 hits at 20, 18 of them in
+  `Mathlib/Algebra/BigOperators/ModEq.lean`; hybrid has 31 hits, 19 in that
+  same module. The 100% lexical `simpa` result is near-duplicate
+  `listSum`/`listProd` declarations, not general retrieval ability, and hybrid
+  is only slightly different.
 - **The families that need help are the ones retrieval misses.** `apply`,
-  `exact`, `refine`, and `obtain` are at 0% at every cutoff. `rw` reaches 26.1%
-  at 20, again concentrated in the same modules.
-- **Same-module exclusion collapses recall to 9.5%.** Because the corpus is
-  built from the whole library, near-duplicate declarations in the target's own
-  module inflate the headline. A realistic future-proof evaluation needs a
-  stronger temporal or duplicate control than "same module".
-- **Statement text helps.** Name + type roughly triples name-only recall at 20
-  (34.5% vs 10.7%), so the type is carrying real signal and should stay in any
-  future index.
-- **Query choice barely matters.** The goal target has the best @20 (34.5%),
-  but the full goal state is slightly better at 1/5/10 (7.1% / 33.3% / 33.3%)
-  and context + goal is lower. Extra context does not rescue retrieval; the
-  target expression already carries most of the usable signal.
+  `exact`, `refine`, and `obtain` are at 0% at every cutoff for lexical, dense,
+  and hybrid. `rw` reaches 26.1% for lexical and hybrid, but dense alone is 0%.
+- **Same-module exclusion stays low.** Lexical drops to 9.5% at 20, hybrid to
+  13.1%, and dense to 6.0%. Because the corpus is built from the whole library,
+  near-duplicate declarations in the target's own module inflate the headline.
+  A realistic future-proof evaluation needs a stronger temporal or duplicate
+  control than "same module".
+- **Statement text and query choice help only partially.** Name + type roughly
+  triples name-only lexical recall at 20 (34.5% vs 10.7%), so the type carries
+  signal. Dense and hybrid do better at rank 1 with the full goal or context +
+  goal (up to 16.7%) than with the goal target, but their @20 is still at or
+  below lexical. Extra context does not rescue recall.
 - **Coverage is the other ceiling.** Only 24.6% of held-out rows have an
   in-corpus theorem reference at all, so even perfect retrieval could affect at
   most a quarter of these rows.
 
 ## Decision
 
-Do not integrate this lexical retriever into prompts, decoding, or training.
-The conditional next step is a better retriever: embeddings or a hybrid
-lexical + dense index, or a model reranker over the BM25 candidates, measured
-on the same 84 applicable rows with the same local/out-of-corpus accounting and
-a stronger leakage control. A two-stage "model predicts the skeleton,
-retrieval fills the lemma" design remains a candidate, but only after retrieval
-recall is materially better and candidate acceptance is measured by Lean, not
-by name match.
+Do not integrate lexical, dense, or hybrid retrieval into prompts, decoding, or
+training. The hybrid's two-row top-20 gain over BM25 is not material, its early
+precision is worse, and the hit set remains concentrated in one source module.
+A model reranker over BM25 candidates could improve precision at small *k*, but
+it cannot exceed the current top-20 ceiling of 36.9% on these rows, so it is
+only worth running if candidate acceptance is measured by Lean rather than by
+name match. A two-stage "model predicts the skeleton, retrieval fills the
+lemma" design remains a candidate, but only after retrieval recall is
+materially better and the leakage controls are stronger.
+
+The more useful next measurement is probably not another retriever: with 24.6%
+coverage and 0% on the `apply`/`exact`/`refine`/`obtain` families that need
+lemma arguments, retrieval is not the only bottleneck. Any future attempt
+should keep the same local/out-of-corpus accounting and report
+kernel-verified tactic acceptance next to recall.
 
 ## Reproduction
 
@@ -153,17 +227,28 @@ python scripts/build_lemma_statements.py \
   --kinds theorem \
   --output data/lemma_statements.jsonl.gz \
   --meta data/lemma_statements.meta.json
+python scripts/build_lemma_embeddings.py \
+  --output data/cache/lemma-embeddings/all-MiniLM-L6-v2.npy
 python scripts/evaluate_retrieval.py \
   --corpus data/lemma_statements.jsonl.gz \
+  --embeddings data/cache/lemma-embeddings/all-MiniLM-L6-v2.npy \
   --output-dir experiments/retrieval-feasibility
 pytest tests/test_retrieval.py tests/test_lemma_statements.py \
-  tests/test_evaluate_retrieval.py
+  tests/test_evaluate_retrieval.py tests/test_embeddings.py \
+  tests/test_build_lemma_embeddings.py
 ```
+
+The embedding build is resumable and takes roughly 40–50 minutes on CPU for
+the full corpus; the evaluator then takes about two minutes. Install the
+optional retrieval dependencies with `pip install -e '.[retrieval]'` (NumPy,
+torch, and transformers). The dense cache is ignored by git and validated
+against the corpus before use.
 
 `scripts/build_lemma_statements.py` runs
 `lake env lean --run NeuralProof/DumpStatements.lean --import Mathlib --kinds theorem`
 and `lake env lean --run NeuralProof/DumpModules.lean --import Mathlib` from
-`lean/` unless `--from-file` / `--modules-file` are supplied. The evaluation
-takes about a minute on this machine and writes `report.json` and `report.md`.
+`lean/` unless `--from-file` / `--modules-file` are supplied. The lexical
+evaluation takes about a minute on this machine; adding the dense cache takes
+about two more minutes. Both write `report.json` and `report.md`.
 `report.json` holds the per-row candidate lists and all ablation tables; this
 README holds the interpretation.

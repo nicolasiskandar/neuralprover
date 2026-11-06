@@ -1,6 +1,7 @@
 # Retrieval Feasibility
 
-Lexical BM25 retrieval over Mathlib theorem statements. Recall is a
+Lexical BM25 retrieval over Mathlib theorem statements, plus dense and
+hybrid sections when a cached embedding matrix is supplied. Recall is a
 diagnostic; a retrieved name is not a verified lemma application.
 
 ## Coverage
@@ -63,6 +64,54 @@ Removes every declaration defined in the target's source module.
 | :-- | --: | --: | --: | --: |
 | name only | 0.0% | 2.9% | 5.7% | 6.4% |
 | name + type | 2.9% | 17.1% | 19.3% | 20.7% |
+
+## Dense and hybrid retrieval
+
+- Encoder: `sentence-transformers/all-MiniLM-L6-v2` at revision `1110a243fdf4706b3f48f1d95db1a4f5529b4d41` (mean pooling, max length 128, embedding SHA-256 `9628016f26e67be11d4ff5b32cc3bdfcea6ca88aa767cb4799574e81fb49f405`).
+- Hybrid: reciprocal rank fusion of BM25 name + type and dense, depth 50, k=60.0, equal weights.
+- The model, revision, pooling, depth and k were fixed before
+  evaluation; nothing was tuned on the held-out targets.
+
+| retriever | query | @1 | @5 | @10 | @20 |
+| :-- | :-- | --: | --: | --: | --: |
+| dense | goal target | 2.4% | 11.9% | 14.3% | 15.5% |
+| dense | full goal state | 7.1% | 31.0% | 31.0% | 31.0% |
+| dense | context + goal | 13.1% | 22.6% | 26.2% | 27.4% |
+| hybrid | goal target | 3.6% | 21.4% | 32.1% | 36.9% |
+| hybrid | full goal state | 16.7% | 31.0% | 33.3% | 34.5% |
+| hybrid | context + goal | 15.5% | 27.4% | 29.8% | 29.8% |
+
+### Dense and hybrid same-module exclusion (goal target)
+
+| retriever | @1 | @5 | @10 | @20 |
+| :-- | --: | --: | --: | --: |
+| dense | 1.2% | 2.4% | 3.6% | 6.0% |
+| hybrid | 1.2% | 6.0% | 8.3% | 13.1% |
+
+### Dense and hybrid by tactic family (goal target)
+
+| retriever | family | rows | @1 | @5 | @10 | @20 |
+| :-- | :-- | --: | --: | --: | --: | --: |
+| dense | `apply` | 7 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `conv` | 1 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `conv_lhs` | 1 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `exact` | 2 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `obtain` | 2 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `refine` | 4 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `rw` | 23 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `simp` | 21 | 4.8% | 9.5% | 14.3% | 14.3% |
+| dense | `simp_rw` | 4 | 0.0% | 0.0% | 0.0% | 0.0% |
+| dense | `simpa` | 19 | 5.3% | 42.1% | 47.4% | 52.6% |
+| hybrid | `apply` | 7 | 0.0% | 0.0% | 0.0% | 0.0% |
+| hybrid | `conv` | 1 | 0.0% | 0.0% | 0.0% | 0.0% |
+| hybrid | `conv_lhs` | 1 | 0.0% | 0.0% | 0.0% | 0.0% |
+| hybrid | `exact` | 2 | 0.0% | 0.0% | 0.0% | 0.0% |
+| hybrid | `obtain` | 2 | 0.0% | 0.0% | 0.0% | 0.0% |
+| hybrid | `refine` | 4 | 0.0% | 0.0% | 0.0% | 0.0% |
+| hybrid | `rw` | 23 | 4.3% | 13.0% | 21.7% | 26.1% |
+| hybrid | `simp` | 21 | 4.8% | 9.5% | 9.5% | 23.8% |
+| hybrid | `simp_rw` | 4 | 0.0% | 0.0% | 50.0% | 50.0% |
+| hybrid | `simpa` | 19 | 5.3% | 68.4% | 94.7% | 94.7% |
 
 ## Notes
 
