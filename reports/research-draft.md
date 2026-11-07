@@ -18,7 +18,13 @@ The intended design extracts proof-state/tactic pairs, splits by source module, 
 
 ## Current results
 
-The pilot contains two local Lean core examples, three Mathlib-backed local replay examples, and five source-mined trajectories from three pinned Mathlib files. An oracle static list of the three Nat tactics verified 3/3 in width-three/20-node search (one node expanded and two tactic calls per theorem on average; Wilson 95% interval [0.438, 1.000]). Correct tactics were supplied directly, so this is plumbing evidence only; the other two source-mined examples were verified during extraction but not included in that search run. Seventeen unit tests pass, including cross-module Mathlib extraction and verification. No pretrained-model inference, LoRA training, pass@10 result, or comparative experiment has run.
+On a held-out, kernel-prevalidated 50-theorem Mathlib benchmark (`data/benchmarks/mathlib-test-50.jsonl`, stratified into 25 single-step and 25 multi-step proofs across 14 files), budget-matched best-first search (`max_nodes=20`, `width=4`, `timeout=30s`) yielded:
+- **Zero-shot base model** (`SmolLM2-135M`): 0/50 solved (0.0%, Wilson 95% [0.0%, 7.1%]).
+- **1-epoch canonical LoRA**: 6/50 solved (12.0%, Wilson 95% [5.6%, 23.8%], mean solve time 8.7s).
+- **LoRA with Lemma Filtering**: 7/50 solved (14.0%, Wilson 95% [7.0%, 26.2%], mean solve time 6.7s, 44 unknown-lemma candidates pruned).
+- **Static heuristic baseline** (`rfl`, `simp`, `assumption`, `exact True.intro`): 7/50 solved (14.0%, Wilson 95% [7.0%, 26.2%], mean solve time 5.3s).
+
+All 7 solved theorems were single-step proofs (28.0% of single-step). Zero multi-step proofs were solved (0/25). Lemma filtering successfully pruned 44 hallucinated lemma calls and reduced invalid tactic executions by 14.2% (from 212 to 182), lowering solve latency without sacrificing theorem coverage. Detailed metrics are recorded in `experiments/benchmark-50/report.md` and `experiments/log.md`.
 
 ## Limitations and threats to validity
 

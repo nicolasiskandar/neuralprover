@@ -1,0 +1,106 @@
+{
+  "budgets": {
+    "max_nodes": 20,
+    "width": 4,
+    "timeout": 30.0
+  },
+  "theorems_count": 50,
+  "summaries": {
+    "static": {
+      "attempted": 50,
+      "verified": 7,
+      "solve_rate": 0.14,
+      "solve_rate_wilson95": [
+        0.06950745262022862,
+        0.2618645719852809
+      ],
+      "pass_at_1": 0.14,
+      "pass_at_10": null,
+      "pass_at_10_note": "not measured: benchmark currently records one search run per theorem",
+      "pass_at_1_protocol": "one bounded search run per theorem; no repeat samples",
+      "mean_solve_seconds": 5.333396877570651,
+      "median_solve_seconds": 5.232989801999793,
+      "mean_nodes_expanded": 1.22,
+      "mean_tactic_calls": 4.6,
+      "invalid_tactics": 212,
+      "timeouts": 0,
+      "rejected_unknown_lemmas": 0,
+      "inference_tokens": null,
+      "gpu_seconds": null,
+      "gpu_memory_mb": null,
+      "wall_seconds": 420.3679498659985
+    },
+    "base": {
+      "attempted": 50,
+      "verified": 0,
+      "solve_rate": 0.0,
+      "solve_rate_wilson95": [
+        0,
+        0.07135003417431873
+      ],
+      "pass_at_1": 0.0,
+      "pass_at_10": null,
+      "pass_at_10_note": "not measured: benchmark currently records one search run per theorem",
+      "pass_at_1_protocol": "one bounded search run per theorem; no repeat samples",
+      "mean_solve_seconds": null,
+      "median_solve_seconds": null,
+      "mean_nodes_expanded": 1.0,
+      "mean_tactic_calls": 2.34,
+      "invalid_tactics": 117,
+      "timeouts": 0,
+      "rejected_unknown_lemmas": 0,
+      "inference_tokens": null,
+      "gpu_seconds": null,
+      "gpu_memory_mb": null,
+      "wall_seconds": 389.6414147489995
+    },
+    "lora": {
+      "attempted": 50,
+      "verified": 6,
+      "solve_rate": 0.12,
+      "solve_rate_wilson95": [
+        0.05617523710624646,
+        0.23805078886623582
+      ],
+      "pass_at_1": 0.12,
+      "pass_at_10": null,
+      "pass_at_10_note": "not measured: benchmark currently records one search run per theorem",
+      "pass_at_1_protocol": "one bounded search run per theorem; no repeat samples",
+      "mean_solve_seconds": 8.712024861166961,
+      "median_solve_seconds": 8.467033197501223,
+      "mean_nodes_expanded": 1.24,
+      "mean_tactic_calls": 4.72,
+      "invalid_tactics": 212,
+      "timeouts": 6,
+      "rejected_unknown_lemmas": 0,
+      "inference_tokens": null,
+      "gpu_seconds": null,
+      "gpu_memory_mb": null,
+      "wall_seconds": 600.8279010120023
+    },
+    "lora_filtered": {
+      "attempted": 50,
+      "verified": 7,
+      "solve_rate": 0.14,
+      "solve_rate_wilson95": [
+        0.06950745262022862,
+        0.2618645719852809
+      ],
+      "pass_at_1": 0.14,
+      "pass_at_10": null,
+      "pass_at_10_note": "not measured: benchmark currently records one search run per theorem",
+      "pass_at_1_protocol": "one bounded search run per theorem; no repeat samples",
+      "mean_solve_seconds": 6.7487769285726245,
+      "median_solve_seconds": 5.808905201000016,
+      "mean_nodes_expanded": 1.38,
+      "mean_tactic_calls": 4.26,
+      "invalid_tactics": 182,
+      "timeouts": 7,
+      "rejected_unknown_lemmas": 44,
+      "inference_tokens": null,
+      "gpu_seconds": null,
+      "gpu_memory_mb": null,
+      "wall_seconds": 543.4563632220015
+    }
+  }
+}

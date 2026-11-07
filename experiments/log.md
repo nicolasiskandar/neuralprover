@@ -1,5 +1,20 @@
 # Experiment log
 
+## 2026-11-07 — held-out 50-theorem proof-search campaign
+
+- Constructed `data/benchmarks/mathlib-test-50.jsonl` (and `manifest.json`), an audited, held-out benchmark of 50 Mathlib theorems drawn strictly from the `test` split of `data/mathlib-info-tree-200/examples.jsonl`. It is stratified 50/50: 25 single-step completed proofs and 25 multi-step proofs, spanning 14 source files. Every theorem is pre-validated by Lean 4 (`LeanClient.inspect()`) to elaborate cleanly.
+- Added `scripts/run_benchmark_campaign.py` and `scripts/check_benchmark.py` to automate end-to-end multi-configuration benchmarking and diagnostics. Added `tests/test_benchmark_dataset.py`, `tests/test_check_benchmark.py`, and `tests/test_benchmark_campaign.py` (371 non-Lean tests pass).
+- Executed the first multi-theorem comparative proof-search campaign on CPU under fixed budgets (`max_nodes=20`, `width=4`, `timeout=30s` per theorem) across 4 configurations:
+  - **Static baseline** (`rfl`, `simp`, `assumption`, `exact True.intro`): 7/50 solved (14.0%, Wilson 95% [7.0%, 26.2%], mean solve time 5.3s, 212 invalid tactics).
+  - **Base model** (`HuggingFaceTB/SmolLM2-135M`): 0/50 solved (0.0%, Wilson 95% [0.0%, 7.1%], 117 invalid tactics).
+  - **Canonical 1-epoch LoRA** (`experiments/mathlib-info-tree-lora-200-1epoch-canonical`): 6/50 solved (12.0%, Wilson 95% [5.6%, 23.8%], mean solve time 8.7s, 212 invalid tactics).
+  - **Canonical LoRA + Lemma Filter** (`--filter-invalid-lemmas`): 7/50 solved (14.0%, Wilson 95% [7.0%, 26.2%], mean solve time 6.7s, 182 invalid tactics, 44 unknown lemmas rejected).
+- Key findings:
+  1. Fine-tuning enables real Lean proof generation: LoRA solves 6-7 theorems while the zero-shot base model solves 0.
+  2. Lemma filtering works as intended: it rejected 44 hallucinated/non-existent lemma candidates before dispatching to Lean, reducing invalid tactic attempts by 14.2% (212 -> 182), dropping solve latency from 8.7s to 6.7s, and enabling LoRA to match the static baseline solve count (7/50).
+  3. Stratification: All 7 solved theorems are single-step proofs (28.0% of single-step). Zero multi-step proofs were closed (0/25), highlighting that multi-step search tree depth and lemma arguments (`rw`/`apply`) remain the core bottleneck.
+  4. Complete machine-readable results in `experiments/benchmark-50/report.md` and `experiments/benchmark-50/comparison.json`.
+
 ## 2026-11-07 — retrieval check script
 
 - Added `scripts/check_retrieval.py`, a single end-to-end check for the retrieval setup: corpus provenance and digest, embedding cache contract (corpus SHA, row count, matrix SHA, dimension, model settings, sampled normalization), BM25/dense/hybrid self-retrieval and exclusion probes, optional `--query` searches, and recall on a deterministic evenly-spaced sample of the 84 applicable held-out rows. Missing dense or held-out inputs are explicit `SKIP` lines; `--require-dense` / `--require-heldout` turn them into failures. `--compare-report` checks sampled top-10 lists against the committed report.
