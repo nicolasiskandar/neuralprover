@@ -338,6 +338,35 @@ def test_custom_query_is_included_in_the_report(tmp_path, capsys):
     assert report["custom_queries"][0]["results"]["lexical"]
 
 
+def test_json_flag_accepts_an_output_path(tmp_path, capsys):
+    corpus, meta = write_corpus(tmp_path)
+    destination = tmp_path / "nested" / "check.json"
+
+    code, output, _ = run(
+        base_args(corpus, meta)
+        + ["--no-dense", "--json", str(destination)], capsys)
+
+    assert code == 0
+    assert destination.is_file()
+    assert payload(output)["failures"] == 0
+    assert payload(destination.read_text())["failures"] == 0
+
+
+def test_output_flag_writes_json_but_keeps_the_transcript(tmp_path, capsys):
+    corpus, meta = write_corpus(tmp_path)
+    destination = tmp_path / "check.json"
+
+    code, output, _ = run(
+        ["--corpus", str(corpus), "--corpus-meta", str(meta),
+         "--no-heldout", "--no-rows", "--no-dense",
+         "--output", str(destination)], capsys)
+
+    assert code == 0
+    assert destination.is_file()
+    assert output.startswith("[PASS]")
+    assert payload(destination.read_text())["failures"] == 0
+
+
 def test_evenly_spaced_sample_is_deterministic():
     rows = list(range(10))
     assert checker.evenly_spaced(rows, 4) == [0, 3, 6, 9]

@@ -603,8 +603,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="make report mismatches failures instead of warnings")
     parser.add_argument("--output", type=Path,
                         help="write the JSON report here")
-    parser.add_argument("--json", action="store_true",
-                        help="print the JSON report instead of the transcript")
+    parser.add_argument("--json", nargs="?", const=True, default=False,
+                        metavar="PATH",
+                        help="print the JSON report; with PATH, also write it there")
     args = parser.parse_args(argv)
 
     report = Report()
@@ -686,9 +687,13 @@ def finish(report: Report, args: argparse.Namespace) -> int:
         "warnings": report.warnings,
         **report.data,
     }
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(payload, indent=2) + "\n")
+    # ``--json PATH`` is convenient for a one-command run; ``--output`` is the
+    # explicit write-only option and wins if both are given.
+    json_path = Path(args.json) if isinstance(args.json, str) else None
+    output = args.output or json_path
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(payload, indent=2) + "\n")
     if args.json:
         print(json.dumps(payload, indent=2))
     else:
@@ -698,8 +703,8 @@ def finish(report: Report, args: argparse.Namespace) -> int:
                   f"{report.warnings} warning(s)")
         else:
             print(f"\nPASS: checked invariants hold; {report.warnings} warning(s)")
-        if args.output:
-            print(f"Report written to {args.output}")
+        if output:
+            print(f"Report written to {output}")
     return 1 if report.failures else 0
 
 
