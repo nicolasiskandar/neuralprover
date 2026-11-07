@@ -71,10 +71,14 @@ python scripts/evaluate_retrieval.py \
   --corpus data/lemma_statements.jsonl.gz \
   --embeddings data/cache/lemma-embeddings/all-MiniLM-L6-v2.npy \
   --output-dir experiments/retrieval-feasibility
+python scripts/check_retrieval.py \
+  --compare-report experiments/retrieval-feasibility/report.json
 ```
 
 Without `--from-file`, the builder runs the two Lean dumpers from `lean/`: `lake env lean --run NeuralProof/DumpStatements.lean --import Mathlib --kinds theorem` and `lake env lean --run NeuralProof/DumpModules.lean --import Mathlib`. `data/lemma_statements.meta.json` records both commands, the Mathlib revision, Lean toolchain, input/output SHA-256, filter counts, and the working-tree state. To rebuild from captured dumps without importing Mathlib again, pass `--from-file <statements.jsonl>` and `--modules-file <modules.tsv>`.
 
 The embedding builder is resumable and writes one normalized float32 row per corpus row. Its cache and metadata stay under ignored `data/cache/lemma-embeddings/`; metadata records the model, immutable revision, pooling, max length, corpus SHA, matrix SHA, and build command. The evaluator fails if the corpus digest, row count, matrix digest, encoder dimension, or model settings disagree with the cache. The dense path needs the optional dependencies from `pip install -e '.[retrieval]'`; the evaluator also uses the pure lexical path without them, but the dense and hybrid sections require NumPy, torch, and transformers.
+
+`scripts/check_retrieval.py` is the quick end-to-end check. It validates the corpus metadata and the embedding cache, probes each retriever by searching a declaration's own statement and by excluding it, runs optional `--query` searches, and prints recall for a deterministic evenly-spaced sample of the held-out rows. It prints `SKIP` with a reason when the dense cache, model, or held-out inputs are absent; `--require-dense` and `--require-heldout` turn those skips into failures. `--compare-report` checks the sampled top-10 lists against the committed report and warns on differences (`--strict-compare` turns them into failures). The sample is a diagnostic subset, not a replacement for the full `evaluate_retrieval.py` report.
 
 The corpus and embeddings are retrieval input: types are delaborated, not re-elaborated, and a retrieval hit is not a verified lemma application. See `experiments/retrieval-feasibility/README.md` for the measurement and its limitations.

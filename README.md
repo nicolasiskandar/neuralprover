@@ -36,6 +36,8 @@ pytest                        # everything
 pytest -m "not lean"          # the part that needs no Lean toolchain (fast)
 pytest -m lean                # only the cases that invoke Lean and Mathlib
 pytest tests/test_predictor.py -q
+python scripts/check_retrieval.py --no-dense   # corpus + BM25, no model
+python scripts/check_retrieval.py              # adds dense/hybrid and a held-out sanity run
 ```
 
 Markers are `lean` (needs the pinned toolchain), `corpus` (needs a corpus that

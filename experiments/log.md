@@ -1,5 +1,13 @@
 # Experiment log
 
+## 2026-11-07 — retrieval check script
+
+- Added `scripts/check_retrieval.py`, a single end-to-end check for the retrieval setup: corpus provenance and digest, embedding cache contract (corpus SHA, row count, matrix SHA, dimension, model settings, sampled normalization), BM25/dense/hybrid self-retrieval and exclusion probes, optional `--query` searches, and recall on a deterministic evenly-spaced sample of the 84 applicable held-out rows. Missing dense or held-out inputs are explicit `SKIP` lines; `--require-dense` / `--require-heldout` turn them into failures. `--compare-report` checks sampled top-10 lists against the committed report.
+- The script is diagnostic only: it does not tune retrieval, does not use held-out targets to build an index, and does not turn recall into a proof claim. Exit status is non-zero only for structural failures.
+- Lexical check takes about 20 seconds on the full 361,832-row corpus; adding the 556 MB MiniLM cache and held-out comparison takes about 30 seconds warm. `--compare-report` matched the committed `report.json` on all 20 sampled rows for lexical, dense, and hybrid.
+- Added `tests/test_check_retrieval.py` (15 cases) with a fake corpus, cache, encoder, held-out files, and a fake committed report; it covers passing and failing digests, row counts, dense skips/requirements, malformed metadata, held-out recall, custom queries, deterministic sampling, and warning versus strict comparison.
+- Documented the command in `README.md`, `docs/reproducibility.md`, and `experiments/retrieval-feasibility/README.md`.
+
 ## 2026-11-06 — lemma retrieval feasibility (dense and hybrid)
 
 - Added `neuralproof/embeddings.py` (mean/CLS pooling, normalized `DenseIndex`, reciprocal rank fusion) and `scripts/build_lemma_embeddings.py`. The builder is resumable through a `.progress.json` checkpoint and records model, revision, pooling, max length, corpus SHA, matrix SHA, and code/worktree state.

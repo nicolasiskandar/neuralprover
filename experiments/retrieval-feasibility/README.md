@@ -233,9 +233,11 @@ python scripts/evaluate_retrieval.py \
   --corpus data/lemma_statements.jsonl.gz \
   --embeddings data/cache/lemma-embeddings/all-MiniLM-L6-v2.npy \
   --output-dir experiments/retrieval-feasibility
+python scripts/check_retrieval.py \
+  --compare-report experiments/retrieval-feasibility/report.json
 pytest tests/test_retrieval.py tests/test_lemma_statements.py \
   tests/test_evaluate_retrieval.py tests/test_embeddings.py \
-  tests/test_build_lemma_embeddings.py
+  tests/test_build_lemma_embeddings.py tests/test_check_retrieval.py
 ```
 
 The embedding build is resumable and takes roughly 40–50 minutes on CPU for
