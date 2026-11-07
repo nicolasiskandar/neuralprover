@@ -16,6 +16,7 @@ def main():
     d=s.add_parser("data"); ds=d.add_subparsers(dest="sub",required=True); e=ds.add_parser("extract"); e.add_argument("--limit",type=int,default=100); e.add_argument("--source",default="lean/NeuralProof/Samples.lean"); e.add_argument("--stats",default="data/raw/extraction_stats.json"); e.add_argument("--output",default="data/raw/sample.jsonl"); e.add_argument("--mathlib",action="store_true"); e.add_argument("--module",default="Mathlib/Data/Nat/Basic.lean"); e.add_argument("--declaration")
     c=ds.add_parser("corpus"); c.add_argument("--mathlib-root",default="lean/.lake/packages/mathlib"); c.add_argument("--files",type=int,default=200); c.add_argument("--per-file",type=int,default=5); c.add_argument("--seed",default="neuralproof-v1"); c.add_argument("--output",default="data/mathlib-200"); c.add_argument("--no-resume",action="store_true")
     tc=ds.add_parser("trace-corpus"); tc.add_argument("--mathlib-root",default="lean/.lake/packages/mathlib"); tc.add_argument("--files",type=int,default=200); tc.add_argument("--per-file",type=int,default=0); tc.add_argument("--seed",default="neuralproof-v1"); tc.add_argument("--timeout",type=float,default=300); tc.add_argument("--output",default="data/mathlib-info-tree-200"); tc.add_argument("--no-resume",action="store_true")
+    rc=ds.add_parser("replay-corpus"); rc.add_argument("--input",required=True); rc.add_argument("--mathlib-root",default="lean/.lake/packages/mathlib"); rc.add_argument("--output",default="data/mathlib-info-tree-200-replayed"); rc.add_argument("--files",type=int,default=0); rc.add_argument("--timeout",type=float,default=300); rc.add_argument("--no-resume",action="store_true")
     ti=ds.add_parser("trace"); ti.add_argument("--file",required=True); ti.add_argument("--output",default="data/traces/latest.json"); ti.add_argument("--timeout",type=float,default=300)
     nt=ds.add_parser("normalize-trace"); nt.add_argument("--trace",required=True); nt.add_argument("--source",required=True); nt.add_argument("--output",required=True)
     rt=ds.add_parser("replay-trace"); rt.add_argument("--source",required=True); rt.add_argument("--output",default="data/validated/latest.jsonl"); rt.add_argument("--stats",default="data/validated/latest.stats.json"); rt.add_argument("--timeout",type=float,default=120)
@@ -53,6 +54,10 @@ def main():
         if a.sub=="trace-corpus":
             from neuralproof.data.info_tree_corpus import extract_info_tree_corpus
             result=extract_info_tree_corpus(Path(a.mathlib_root),Path(a.output),files=a.files,per_file=a.per_file,seed=a.seed,timeout=a.timeout,resume=not a.no_resume)
+            print(json.dumps(result,ensure_ascii=False,indent=2)); return
+        if a.sub=="replay-corpus":
+            from neuralproof.data.replay_corpus import replay_corpus
+            result=replay_corpus(Path(a.input),Path(a.mathlib_root),Path(a.output),files=a.files,timeout=a.timeout,resume=not a.no_resume)
             print(json.dumps(result,ensure_ascii=False,indent=2)); return
         if a.mathlib:
             from neuralproof.data.extraction import extract_mathlib_file

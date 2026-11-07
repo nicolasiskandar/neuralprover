@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "artifact": "benchmark_theorems",
+  "command": "python -m neuralproof.cli --count 50 --output data/benchmarks/mathlib-test-50.jsonl",
+  "input_corpus": {
+    "path": "/home/nicolas/workspace/neuralprover/data/mathlib-info-tree-200/examples.jsonl",
+    "sha256": "b1a3a776d6eead9bcca2fcd4677613ae4bf67ec227e42b85fda3518641580cd6"
+  },
+  "input_statements": {
+    "path": "/home/nicolas/workspace/neuralprover/data/lemma_statements.jsonl.gz",
+    "sha256": "a944016322fa5f0f9e4ec1a835505131bddab5b9ee1c7675c9e80d0400530f30"
+  },
+  "output": {
+    "path": "/home/nicolas/workspace/neuralprover/data/benchmarks/mathlib-test-50.jsonl",
+    "sha256": "749ea889852962598d75c8f1b2b1c53fe5c574da960f220d055c42e9d98b7a25",
+    "rows": 50
+  },
+  "requested_count": 50,
+  "single_step_theorems": 25,
+  "multi_step_theorems": 25,
+  "unique_source_files": 14,
+  "seed": 42,
+  "prevalidated_by_kernel": true
+}

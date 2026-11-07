@@ -86,6 +86,35 @@ def test_pass_at_10_is_reported_as_unmeasured():
     assert "not measured" in summary["pass_at_10_note"]
 
 
+def test_pass_at_k_estimator_values():
+    from neuralproof.evaluation.metrics import pass_at_k
+    # If c == 0, pass@k is 0
+    assert pass_at_k(10, 0, 1) == 0.0
+    assert pass_at_k(10, 0, 10) == 0.0
+    # If c == n, pass@k is 1.0
+    assert pass_at_k(10, 10, 1) == 1.0
+    assert pass_at_k(10, 10, 10) == 1.0
+    # If n - c < k, at least one success in any sample of size k
+    assert pass_at_k(10, 5, 6) == 1.0
+    # Boundary / invalid
+    assert pass_at_k(5, 2, 10) == 0.0
+    assert pass_at_k(0, 0, 1) == 0.0
+
+
+def test_pass_at_10_is_computed_when_repeat_attempts_exist():
+    # 2 theorems, each attempted 10 times: one solved 2 times, one solved 0 times
+    summary = summarize([
+        {"verified": True, "attempts": 10, "verified_attempts": 2},
+        {"verified": False, "attempts": 10, "verified_attempts": 0},
+    ])
+    assert summary["pass_at_10"] is not None
+    # Theorem 1: n=10, c=2, k=10 -> 1 - binom(8,10)/binom(10,10) = 1 - 0 = 1.0
+    # Theorem 2: n=10, c=0, k=10 -> 0.0
+    # Mean: 0.5
+    assert summary["pass_at_10"] == pytest.approx(0.5)
+
+
+
 # --- the confidence interval ------------------------------------------------
 
 def test_the_interval_is_absent_without_a_sample():

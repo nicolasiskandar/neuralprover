@@ -118,3 +118,33 @@ def test_train_rejects_a_zero_step_budget(monkeypatch, tmp_path):
 def test_doctor_reports_the_pinned_lean_version(monkeypatch, capsys):
     run_cli(monkeypatch, "doctor")
     assert "Lean (version 4.35.0" in capsys.readouterr().out
+
+
+# --- replay-corpus ---------------------------------------------------------
+
+def test_replay_corpus_subcommand_invokes_replay_corpus(monkeypatch, tmp_path, capsys):
+    called_with = {}
+
+    def fake_replay(input_file, mathlib_root, output, **kwargs):
+        called_with.update({"input": input_file, "root": mathlib_root, "output": output, **kwargs})
+        return {"status": "ok", "completed_files": 1}
+
+    monkeypatch.setattr("neuralproof.data.replay_corpus.replay_corpus", fake_replay)
+    fake_input = tmp_path / "in.jsonl"
+    fake_input.write_text("{}\n")
+    out_dir = tmp_path / "replayed"
+    run_cli(monkeypatch, "data", "replay-corpus", "--input", str(fake_input),
+            "--output", str(out_dir), "--files", "5", "--timeout", "60", "--no-resume")
+
+    assert called_with["input"].resolve() == fake_input.resolve()
+    assert called_with["output"].resolve() == out_dir.resolve()
+    assert called_with["files"] == 5
+    assert called_with["timeout"] == 60
+    assert called_with["resume"] is False
+    assert '"completed_files": 1' in capsys.readouterr().out
+
+
+def test_replay_corpus_requires_input_argument(monkeypatch):
+    with pytest.raises(SystemExit):
+        run_cli(monkeypatch, "data", "replay-corpus")
+
