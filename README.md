@@ -99,7 +99,23 @@ Run only on completed/supported data when measuring generalization. The corpus p
 - `prove`: bounded best-first search using a static tactic list; pass a JSON array to preserve commas inside Lean tactics.
 - `evaluate`: fixed-node/wall-time search evaluation of whole theorem headers, writes per-problem JSONL.
 - `evaluate-tactics`: held-out tactic-prediction comparison of base and LoRA on the same sample.
+- `interact`: step through a proof in a Lean-checked CLI session, with optional model suggestions.
 - `report`: summarizes result files under a directory.
+
+### Interactive proof stepping
+
+`interact` opens a session where every typed tactic is sent to Lean immediately. The prompt shows the current goals and the exact Lean error when a tactic is rejected; a proof is called verified only after the final kernel and axiom check.
+
+```bash
+python -m neuralproof.cli interact --file lean/NeuralProof/Samples.lean
+python -m neuralproof.cli interact \
+  --benchmark data/benchmarks/mathlib-test-50.jsonl \
+  --theorem-id bench_np_bench_AlgCat_inv_hom_apply \
+  --adapter experiments/mathlib-info-tree-lora-200-1epoch-canonical \
+  --revision 4e53f736cbb20a9a0f56b4c4bf378d9f306ff915
+```
+
+Commands: `:goals`, `:suggest [n]`, `:search`, `:undo`, `:verify`, `:save [path]`, `:reset`, `:help`, `:quit`. Suggestions are displayed but never applied automatically, and `:search` runs bounded best-first search from the current state. A saved proof gets a `.json` sidecar marked `human_in_the_loop: true`, so an interactive proof is never counted as an autonomous benchmark result.
 
 The static predictor is a testing baseline, not a language model. `neuralproof.models.predictor.load_hf_predictor` loads an HF base model or adapter; pass `--model-id`, `--adapter`, and an immutable `--revision` to `prove`/`evaluate` when available. A completion is scanned for the first line that is not an echo of the prompt, and an empty candidate is dropped rather than sent to Lean, so a model that answered nothing is not recorded as a model error. Search priority can be varied with `--priority bfs`, deduplication can be disabled with `--no-deduplicate`, and width/node limits expose small search ablations. No result should be labeled a base-vs-LoRA comparison until the same held-out set and budget have been executed with both weights.
 

@@ -17,23 +17,42 @@ class SearchResult:
     trace:list[dict]=field(default_factory=list)
     rejected_candidates:int=0
     rejected_unknown_lemmas:int=0
+    # The completed state when the search verified a proof.  An interactive
+    # session loads it so the user can save or inspect a machine-found proof.
+    state:ProofState|None=None
 
 
 def best_first(client,theorem,predictor,*,context="import Lean",max_nodes=50,width=5,timeout=30,max_depth=12,deduplicate=True,priority="model",filter_invalid_lemmas=False,lemma_index_path=None):
-    """Bounded best-first search.  Lemma filtering is opt-in.
+    """Bounded best-first search from a theorem header.  Lemma filtering is opt-in.
 
     The filter is a budget saver, not a validity check: it refuses a candidate
     only when it names a symbol that is neither in the lemma index nor in the
     current goal state.  Lean still decides every tactic that is tried.
     """
-    start=time.monotonic(); seq=count(); initial=client.inspect(client.initial_state(theorem,context)); seen=set(); expanded=calls=0; trace=[]; rejected=0; rejected_unknown=0
+    initial=client.inspect(client.initial_state(theorem,context))
+    if not initial.success or initial.state is None:
+        return SearchResult(None,False,0,0,[{"initial_state_inspection":False,"error":initial.error}])
+    result=best_first_from_state(client,initial.state,predictor,
+                                 max_nodes=max_nodes,width=width,timeout=timeout,
+                                 max_depth=max_depth,deduplicate=deduplicate,
+                                 priority=priority,
+                                 filter_invalid_lemmas=filter_invalid_lemmas,
+                                 lemma_index_path=lemma_index_path)
+    result.trace.insert(0,{"initial_state_inspection":True,"goal_state":initial.state.goal_state,"goals":list(initial.state.goals)})
+    return result
+
+
+def best_first_from_state(client,initial_state,predictor,*,max_nodes=50,width=5,timeout=30,max_depth=12,deduplicate=True,priority="model",filter_invalid_lemmas=False,lemma_index_path=None):
+    """Bounded best-first search starting from an already-inspected state.
+
+    The interactive session uses this to continue from the user's prefix; the
+    theorem entry point inspects its own initial state and calls it here.
+    """
+    start=time.monotonic(); seq=count(); seen=set(); expanded=calls=0; trace=[]; rejected=0; rejected_unknown=0
     # A missing index is an error, not a silent no-op: a run that asked for
     # filtering must not look filtered when it was not.
     lemma_index = load_lemma_index(lemma_index_path, required=True) if filter_invalid_lemmas else frozenset()
-    if not initial.success or initial.state is None:
-        return SearchResult(None,False,0,0,[{"initial_state_inspection":False,"error":initial.error}])
-    trace.append({"initial_state_inspection":True,"goal_state":initial.state.goal_state,"goals":list(initial.state.goals)})
-    queue=[(0.,next(seq),0,initial.state)]
+    queue=[(0.,next(seq),0,initial_state)]
     while queue and expanded<max_nodes and time.monotonic()-start<timeout:
         _,_,depth,state=heapq.heappop(queue)
         if deduplicate and state.prefix in seen: continue
@@ -68,7 +87,7 @@ def best_first(client,theorem,predictor,*,context="import Lean",max_nodes=50,wid
                 finally: client.timeout=old_timeout
                 if verification.verified:
                     trace.append({"final_verification":True,"axioms":list(verification.axioms)})
-                    return SearchResult(proof,True,expanded,calls,trace,rejected,rejected_unknown)
+                    return SearchResult(proof,True,expanded,calls,trace,rejected,rejected_unknown,result.state)
                 trace.append({"final_verification":False,"error":verification.output,"axioms":list(verification.axioms)})
                 continue
             key=-cand.score if priority=="model" else float(depth+1)

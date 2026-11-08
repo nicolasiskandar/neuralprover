@@ -11,6 +11,37 @@ def parse_tactics(value):
         return parsed
     return value.split(",")
 
+
+def _interactive_source(args):
+    """The theorem header and context an interactive session starts from."""
+    if args.theorem:
+        return args.theorem.strip(), (args.context or "import Lean").strip() or "import Lean"
+    if args.benchmark:
+        if not args.theorem_id:
+            raise SystemExit("--benchmark requires --theorem-id")
+        rows=[json.loads(line) for line in Path(args.benchmark).read_text().splitlines() if line.strip()]
+        row=next((r for r in rows if r.get("theorem_id")==args.theorem_id),None)
+        if row is None:
+            raise SystemExit(f"theorem_id {args.theorem_id!r} not found in {args.benchmark}")
+        return row["theorem"], row.get("context","import Lean")
+    if args.file:
+        lines=Path(args.file).read_text().splitlines()
+        start=next((i for i,line in enumerate(lines) if re.match(r"\s*(?:theorem|lemma)\s",line)),None)
+        if start is None:
+            raise SystemExit("No top-level theorem or lemma header found in file")
+        end=start
+        while end<len(lines) and ":=" not in lines[end]:
+            end+=1
+        if end>=len(lines):
+            raise SystemExit("theorem header has no ':=' body")
+        header="\n".join(lines[start:end+1])
+        if ":= by" not in header:
+            raise SystemExit("interactive mode needs a ':=' by proof")
+        theorem=header.split(":= by",1)[0].rstrip()
+        context="\n".join(lines[:start]).strip() or "import Lean"
+        return theorem,context
+    raise SystemExit("provide --file, --benchmark with --theorem-id, or --theorem")
+
 def main():
     p=argparse.ArgumentParser(prog="neuralproof"); s=p.add_subparsers(dest="cmd",required=True); s.add_parser("doctor")
     d=s.add_parser("data"); ds=d.add_subparsers(dest="sub",required=True); e=ds.add_parser("extract"); e.add_argument("--limit",type=int,default=100); e.add_argument("--source",default="lean/NeuralProof/Samples.lean"); e.add_argument("--stats",default="data/raw/extraction_stats.json"); e.add_argument("--output",default="data/raw/sample.jsonl"); e.add_argument("--mathlib",action="store_true"); e.add_argument("--module",default="Mathlib/Data/Nat/Basic.lean"); e.add_argument("--declaration")
@@ -26,6 +57,11 @@ def main():
     et=s.add_parser("evaluate-tactics"); et.add_argument("--data",required=True); et.add_argument("--output",default="experiments/tactic-prediction/results.json"); et.add_argument("--model",default="HuggingFaceTB/SmolLM2-135M"); et.add_argument("--revision"); et.add_argument("--adapter",required=True); et.add_argument("--limit",type=int,default=100); et.add_argument("--seed",default="neuralproof-next-tactic-v1")
     pp=s.add_parser("preprocess"); pp.add_argument("--input",default="data/raw/sample.jsonl"); pp.add_argument("--output",default="data/processed"); pp.add_argument("--seed",default="neuralproof-v1"); pp.add_argument("--include-unvalidated",action="store_true",help="keep rows whose context was never replayed by Lean; they are stamped validation_status=unreplayed")
     rp=s.add_parser("report"); rp.add_argument("--results-dir",default="experiments")
+    ia=s.add_parser("interact",help="step through a proof interactively; Lean checks every tactic and the final kernel result")
+    ia.add_argument("--file"); ia.add_argument("--benchmark"); ia.add_argument("--theorem-id"); ia.add_argument("--theorem"); ia.add_argument("--context")
+    ia.add_argument("--tactics",default="rfl,trivial,assumption,exact True.intro"); ia.add_argument("--model-id"); ia.add_argument("--adapter"); ia.add_argument("--revision")
+    ia.add_argument("--timeout",type=float,default=30); ia.add_argument("--max-suggestions",type=int,default=5)
+    ia.add_argument("--nodes",type=int,default=20); ia.add_argument("--width",type=int,default=4); ia.add_argument("--save-dir",default="experiments/interactive")
     a=p.parse_args()
     if a.cmd=="doctor": print(LeanClient().doctor()); print("Python",sys.version.split()[0]); return
     if a.cmd=="data":
@@ -161,6 +197,19 @@ def main():
         from neuralproof.evaluation.tactic_prediction import evaluate_tactic_prediction
         result=evaluate_tactic_prediction(a.data,a.output,base_model=a.model,revision=a.revision,adapter=a.adapter,limit=a.limit,seed=a.seed)
         print(json.dumps({k:{x:v for x,v in value.items() if x!="examples"} if isinstance(value,dict) else value for k,value in result.items()},ensure_ascii=False,indent=2)); return
+    if a.cmd=="interact":
+        from neuralproof.interactive import ProofSession,run_repl
+        theorem,context=_interactive_source(a)
+        predictor=StaticPredictor(parse_tactics(a.tactics))
+        model_id=a.model_id or ("HuggingFaceTB/SmolLM2-135M" if a.adapter else None)
+        if model_id:
+            from neuralproof.models.predictor import load_hf_predictor
+            predictor=load_hf_predictor(model_id,a.adapter,a.revision)
+        try:
+            session=ProofSession(LeanClient(timeout=a.timeout),theorem,context=context,predictor=predictor,max_suggestions=a.max_suggestions)
+        except RuntimeError as error:
+            raise SystemExit(str(error))
+        return run_repl(session,save_dir=a.save_dir,search_budget={"max_nodes":a.nodes,"width":a.width,"timeout":a.timeout})
     if a.cmd=="report":
         from neuralproof.evaluation.metrics import summarize
         for f in sorted(Path(a.results_dir).rglob("results.jsonl")):
