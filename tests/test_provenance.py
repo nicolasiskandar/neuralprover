@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import sys
 
 import pytest
 
@@ -104,6 +105,16 @@ def test_a_tree_outside_a_repository_has_no_digest(tmp_path, monkeypatch):
     assert code_diff_sha256() is None
 
 
-def test_the_current_command_names_the_cli():
-    command = current_command()
-    assert "neuralproof.cli" in command
+def test_the_current_command_names_the_module_entry_point(monkeypatch):
+    monkeypatch.setattr(
+        sys, "orig_argv",
+        ["/usr/bin/python", "-m", "neuralproof.cli", "doctor"], raising=False)
+    assert current_command() == "python -m neuralproof.cli doctor"
+
+
+def test_the_current_command_names_a_script_entry_point(monkeypatch):
+    monkeypatch.setattr(
+        sys, "orig_argv",
+        ["/usr/bin/python", "scripts/build_benchmark_theorems.py", "--count", "5"],
+        raising=False)
+    assert current_command() == "python scripts/build_benchmark_theorems.py --count 5"

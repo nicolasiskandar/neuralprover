@@ -111,6 +111,24 @@ def test_unexpected_axiom_rejected(client):
     assert "fabricated" in result.axioms
 
 
+def test_private_and_attributed_theorems_still_get_the_axiom_check(client):
+    context = "import Lean\naxiom bad : False"
+    for header in [
+        "private theorem np_private : False := bad",
+        "@[simp] theorem np_attributed : False := bad",
+    ]:
+        result = client.verify(header, context=context)
+        assert not result.verified, result.output
+        assert "bad" in result.axioms
+
+
+def test_an_unknown_declaration_header_fails_closed(client):
+    context = "import Lean\naxiom bad : False"
+    result = client.verify("example : False := bad", context=context)
+    assert not result.verified
+    assert "declaration name" in result.output
+
+
 def test_subprocess_timeout():
     client = LeanClient(timeout=0.000001)
     result = client.apply(client.initial_state("theorem slow : True"), "trivial")

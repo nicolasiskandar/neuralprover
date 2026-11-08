@@ -168,6 +168,30 @@ def test_two_nodes_on_the_same_span_are_deduplicated(source_file):
     assert rows[0]["syntax_kind"] == "Lean.Parser.Tactic.tacticTrivial"
 
 
+def test_a_multiline_tactic_is_excluded(tmp_path):
+    # A source span that crosses a line may bundle more than one command, so
+    # the normalizer does not treat it as a single next-tactic target.
+    text = "import Lean\ntheorem t : True := by\n  exact\n    True.intro\n"
+    path = tmp_path / "Mathlib" / "M.lean"
+    path.parent.mkdir(parents=True)
+    path.write_text(text)
+    tactic_start = len(text[:text.index("exact")].encode())
+    tactic_end = len(text[:text.index("True.intro") + len("True.intro")].encode())
+    proof_start = len(text[:text.index("by")].encode())
+    trace = {"source_file": "Mathlib/M.lean", "traces": [
+        {"declaration": "t", "syntax_kind": "Lean.Parser.Term.byTactic",
+         "source_start": str(proof_start), "source_end": str(len(text.encode()))},
+        {"declaration": "t", "syntax_kind": "Lean.Parser.Tactic.tacticExact",
+         "source_start": str(tactic_start), "source_end": str(tactic_end),
+         "goal_state": "⊢ True", "result_state": "no goals", "completed": True},
+    ]}
+    rows, stats = normalize_trace(trace, path)
+    assert rows == []
+    # The `by` header and the multiline tactic are both non-targets.
+    assert stats["excluded"]["wrapper_or_non_tactic"] == 2
+
+
+
 def test_the_split_of_an_example_follows_its_file(source_file):
     from neuralproof.data.splits import split_for
     trace = {"source_file": "Mathlib/A.lean", "traces": [proof_node(), tactic_node()]}

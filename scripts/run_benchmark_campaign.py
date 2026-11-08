@@ -58,13 +58,20 @@ def build_markdown_report(
     theorems: list[dict[str, Any]],
     results_by_config: dict[str, list[dict[str, Any]]],
     budgets: dict[str, Any],
+    benchmark_path: str | Path | None = None,
 ) -> str:
+    total = len(theorems)
+    single_ids = {r["theorem_id"] for r in theorems if r.get("completed_after_first_tactic")}
+    multi_ids = {r["theorem_id"] for r in theorems if not r.get("completed_after_first_tactic")}
+    benchmark_line = f"- **Benchmark**: {total} held-out Mathlib theorems"
+    if benchmark_path is not None:
+        benchmark_line += f" (`{benchmark_path}`)"
     lines = [
-        "# 50-Theorem Proof-Search Evaluation Campaign",
+        f"# {total}-Theorem Proof-Search Evaluation Campaign",
         "",
         "## Overview",
         "",
-        f"- **Benchmark**: 50 held-out Mathlib theorems ([`data/benchmarks/mathlib-test-50.jsonl`](../../data/benchmarks/mathlib-test-50.jsonl))",
+        benchmark_line,
         f"- **Search Budget**: `max_nodes={budgets.get('max_nodes', 20)}`, `width={budgets.get('width', 4)}`, `timeout={budgets.get('timeout', 30)}s`",
         f"- **Date**: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}",
         "",
@@ -91,13 +98,10 @@ def build_markdown_report(
         "",
         "## Stratified Performance by Proof Depth",
         "",
-        "| Configuration | Single-Step Solved (of 25) | Multi-Step Solved (of 25) | Overall Solved (of 50) |",
+        f"| Configuration | Single-Step Solved (of {len(single_ids)}) | "
+        f"Multi-Step Solved (of {len(multi_ids)}) | Overall Solved (of {total}) |",
         "| :--- | :---: | :---: | :---: |",
     ])
-
-    # Calculate single vs multi step solve counts
-    single_ids = {r["theorem_id"] for r in theorems if r.get("completed_after_first_tactic")}
-    multi_ids = {r["theorem_id"] for r in theorems if not r.get("completed_after_first_tactic")}
 
     for name, res_list in results_by_config.items():
         res_map = {r["theorem_id"]: r.get("verified", False) for r in res_list}
@@ -151,6 +155,7 @@ def run_campaign(
     max_nodes: int = 20,
     width: int = 4,
     timeout: float = 30,
+    benchmark_path: Path | str | None = None,
 ) -> tuple[dict[str, dict[str, Any]], str]:
     output_dir.mkdir(parents=True, exist_ok=True)
     summaries: dict[str, dict[str, Any]] = {}
@@ -213,7 +218,8 @@ def run_campaign(
               f"({format_rate(cfg_summary['solve_rate'])})")
 
     # Generate consolidated Markdown report
-    report_md = build_markdown_report(summaries, theorems, results_by_config, budget)
+    report_md = build_markdown_report(summaries, theorems, results_by_config, budget,
+                                      benchmark_path=benchmark_path)
     report_path = output_dir / "report.md"
     report_path.write_text(report_md)
 
@@ -262,6 +268,7 @@ def main():
         max_nodes=args.nodes,
         width=args.width,
         timeout=args.timeout,
+        benchmark_path=args.benchmark,
     )
 
     print("\n" + "=" * 60)

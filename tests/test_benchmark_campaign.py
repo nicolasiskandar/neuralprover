@@ -75,10 +75,55 @@ def test_build_markdown_report_structures_table():
     budgets = {"max_nodes": 20, "width": 4, "timeout": 30}
 
     report = build_markdown_report(summaries, theorems, results_by_config, budgets)
-    assert "# 50-Theorem Proof-Search Evaluation Campaign" in report
+    assert "# 2-Theorem Proof-Search Evaluation Campaign" in report
+    assert ("| Configuration | Single-Step Solved (of 1) | Multi-Step Solved (of 1) "
+            "| Overall Solved (of 2) |") in report
     assert "| **static** |" in report
     assert "50.0% [15.0%, 85.0%]" in report
     assert "`decl1`" in report
+
+
+def test_build_markdown_report_uses_the_actual_theorem_counts():
+    summaries = {
+        "static": {
+            "attempted": 3,
+            "verified": 1,
+            "solve_rate": 1 / 3,
+            "solve_rate_wilson95": [0.1, 0.7],
+            "mean_nodes_expanded": 1.0,
+            "mean_tactic_calls": 2.0,
+            "invalid_tactics": 0,
+            "rejected_unknown_lemmas": 0,
+            "mean_solve_seconds": 1.0,
+        }
+    }
+    theorems = [
+        {"theorem_id": "t1", "source_declaration": "A.t1",
+         "source_file": "Mathlib/A.lean", "completed_after_first_tactic": True},
+        {"theorem_id": "t2", "source_declaration": "A.t2",
+         "source_file": "Mathlib/A.lean", "completed_after_first_tactic": True},
+        {"theorem_id": "t3", "source_declaration": "A.t3",
+         "source_file": "Mathlib/A.lean", "completed_after_first_tactic": False},
+    ]
+    results_by_config = {
+        "static": [
+            {"theorem_id": "t1", "verified": True},
+            {"theorem_id": "t2", "verified": False},
+            {"theorem_id": "t3", "verified": False},
+        ]
+    }
+
+    report = build_markdown_report(
+        summaries, theorems, results_by_config, {},
+        benchmark_path="data/benchmarks/custom.jsonl")
+
+    assert "# 3-Theorem Proof-Search Evaluation Campaign" in report
+    assert "(of 2)" in report
+    assert "(of 1)" in report
+    assert "(of 3)" in report
+    assert "(of 25)" not in report
+    assert "(of 50)" not in report
+    assert "custom.jsonl" in report
 
 
 def test_run_campaign_executes_static_config(tmp_path):

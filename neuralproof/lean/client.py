@@ -97,23 +97,102 @@ def _goal_region(run: LeanRun) -> str:
                                           if message.get("kind") == "trace"))
 
 
-def _axioms(messages: tuple[dict[str, Any], ...]) -> tuple[str, ...]:
-    """The axioms reported by `#print axioms`, if that command ran."""
+def _axioms(messages: tuple[dict[str, Any], ...]) -> tuple[tuple[str, ...], bool]:
+    """The axioms reported by `#print axioms`, and whether a report was seen.
+
+    The second value is false when no `#print axioms` output is present.  A
+    caller must not read an empty axiom tuple as "no dependencies" unless a
+    report was actually emitted; otherwise a skipped command would look like a
+    constructive proof.
+    """
     fallback: tuple[str, ...] | None = None
+    reported = False
     for message in messages:
         if message.get("severity") != "information":
             continue
         data = str(message.get("data", ""))
+        if "depends on axioms" in data or "depend on any axioms" in data:
+            reported = True
         if "axioms" not in data:
             continue
         # "'x' depends on axioms: [a, b]" names the dependencies; "'x' does not
         # depend on any axioms" names none.
         depends = re.search(r"depends on axioms:\s*\[([^\]]*)\]", data)
         if depends:
-            return tuple(item.strip() for item in depends.group(1).split(",") if item.strip())
+            return tuple(item.strip() for item in depends.group(1).split(",") if item.strip()), True
         if fallback is None and re.search(r"\[([^\]]*)\]", data):
             fallback = tuple(item.strip() for item in re.search(r"\[([^\]]*)\]", data).group(1).split(",") if item.strip())
-    return fallback if fallback is not None else ()
+    return (fallback if fallback is not None else ()), reported
+
+
+_DECL_MODIFIERS = frozenset({
+    "private", "protected", "noncomputable", "unsafe", "partial", "nonrec",
+})
+
+
+def _strip_declaration_prefix(text: str) -> str:
+    """Drop comments, attributes, and modifiers that precede a declaration."""
+    rest = text.lstrip()
+    while rest:
+        if rest.startswith("/--") or rest.startswith("/-"):
+            opener = 3 if rest.startswith("/--") else 2
+            end = rest.find("-/", opener)
+            if end < 0:
+                return ""
+            rest = rest[end + 2:].lstrip()
+            continue
+        if rest.startswith("--"):
+            end = rest.find("\n")
+            if end < 0:
+                return ""
+            rest = rest[end + 1:].lstrip()
+            continue
+        if rest.startswith("@["):
+            depth = 0
+            end = -1
+            for index, char in enumerate(rest):
+                if char == "[":
+                    depth += 1
+                elif char == "]":
+                    depth -= 1
+                    if depth == 0:
+                        end = index
+                        break
+            if end < 0:
+                return ""
+            rest = rest[end + 1:].lstrip()
+            continue
+        modifier = re.match(r"[A-Za-z_]+", rest)
+        if modifier and modifier.group(0) in _DECL_MODIFIERS:
+            rest = rest[modifier.end():].lstrip()
+            continue
+        return rest
+    return rest
+
+
+def _declaration_name(text: str) -> str | None:
+    """The name `#print axioms` needs, or `None` when the header is unknown.
+
+    Attributes, doc/line comments, and modifiers are skipped so that a
+    `private` or `@[simp]` theorem still reaches the axiom check.  A caller may
+    also pass a small preamble (for example an `axiom` the proof uses) before
+    the theorem, so every line start is a candidate.  Returning `None` is a
+    verification failure, never a reason to skip that check.
+    """
+    candidates = [text]
+    candidates.extend(text[newline.end():] for newline in re.finditer(r"\n", text))
+    for candidate in candidates:
+        rest = _strip_declaration_prefix(candidate)
+        match = re.match(r"(?:theorem|lemma)\s+(«[^»]+»|[^\s(:]+)", rest)
+        if not match:
+            continue
+        name = match.group(1)
+        if name.startswith("«"):
+            return name
+        # `foo.{u}` names the same declaration; `#print axioms` takes `foo`.
+        name = name.split(".{", 1)[0]
+        return name or None
+    return None
 
 class LeanClient:
     def __init__(self, project_dir: str | Path | None = None, timeout: float = 20):
@@ -171,15 +250,19 @@ class LeanClient:
     def verify(self,theorem_with_proof,context="import Lean"):
         started=time.monotonic()
         if re.search(r"\b(sorry|admit)\b",theorem_with_proof): return VerificationResult(False,"","placeholder token rejected",time.monotonic()-started)
-        match=re.search(r"(?m)^(?:theorem|lemma)\s+([^\s(:]+)",theorem_with_proof)
-        declaration=match.group(1) if match else ""
-        source=context.rstrip()+"\n"+theorem_with_proof.rstrip()+ (f"\n#print axioms {declaration}\n" if declaration else "")
+        declaration=_declaration_name(theorem_with_proof)
+        if declaration is None:
+            return VerificationResult(False,"","could not determine the declaration name; refusing to skip the axiom check",time.monotonic()-started)
+        source=context.rstrip()+"\n"+theorem_with_proof.rstrip()+f"\n#print axioms {declaration}\n"
         run=self._run(source+"\n",prefix="neuralproof-verify-")
         elapsed=time.monotonic()-started
-        if run.timed_out: return VerificationResult(False,"","Lean verification timed out",elapsed)
-        axioms=_axioms(run.messages)
+        if run.timed_out: return VerificationResult(False,declaration,"Lean verification timed out",elapsed)
+        axioms,reported=_axioms(run.messages)
         allowed={"propext","Classical.choice","Quot.sound"}
         unexpected=tuple(x for x in axioms if x not in allowed)
         output="\n".join(f"{m.get('severity')}: {m.get('data')}" for m in run.messages) or (run.stdout+run.stderr)
         if unexpected: output+="\nunexpected axiom dependencies: "+", ".join(unexpected)
+        if run.returncode==0 and not reported:
+            output+="\nno #print axioms report found"
+            return VerificationResult(False,declaration,output,elapsed,axioms)
         return VerificationResult(run.returncode==0 and not unexpected,declaration,output,elapsed,axioms)

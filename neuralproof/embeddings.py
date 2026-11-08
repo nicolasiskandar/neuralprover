@@ -62,13 +62,17 @@ class EmbeddingEncoder:
         self.pooling = pooling
         self.max_length = max_length
         self.batch_size = batch_size
+        self.device = torch.device(device)
         if threads > 0:
             torch.set_num_threads(threads)
         self.tokenizer = AutoTokenizer.from_pretrained(model, revision=revision)
-        self.model = AutoModel.from_pretrained(model, revision=revision).eval()
+        encoder = AutoModel.from_pretrained(model, revision=revision).eval()
         if quantize:
-            self.model = torch.quantization.quantize_dynamic(
-                self.model, {torch.nn.Linear}, dtype=torch.qint8)
+            if self.device.type != "cpu":
+                raise ValueError("dynamic quantization is only supported on CPU")
+            encoder = torch.quantization.quantize_dynamic(
+                encoder, {torch.nn.Linear}, dtype=torch.qint8)
+        self.model = encoder.to(self.device)
 
     @property
     def dimension(self) -> int:
@@ -95,11 +99,13 @@ class EmbeddingEncoder:
         torch = self.torch
         tokens = self.tokenizer(batch, padding=True, truncation=True,
                                 max_length=self.max_length, return_tensors="pt")
+        tokens = {name: value.to(self.device) for name, value in tokens.items()}
         with torch.inference_mode():
             hidden = self.model(**tokens).last_hidden_state
-        mask = tokens["attention_mask"].numpy()
-        vectors = (mean_pool(hidden.numpy(), mask) if self.pooling == "mean"
-                   else cls_pool(hidden.numpy()))
+        hidden = hidden.detach().float().cpu().numpy()
+        mask = tokens["attention_mask"].detach().cpu().numpy()
+        vectors = (mean_pool(hidden, mask) if self.pooling == "mean"
+                   else cls_pool(hidden))
         return normalize_rows(vectors)
 
 

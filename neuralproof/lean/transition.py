@@ -336,6 +336,11 @@ def classify_output(run: HarnessRun) -> Classification:
     ``accepted`` is intentionally narrow: the only error must be Lean's
     ``unsolved goals`` report.  A parse error, an unknown tactic, or a failed
     side condition is a rejection even when it leaves goals open.
+
+    A successful run is still not ``closed`` when Lean warns that the
+    declaration uses ``sorry``: the self-check harness appends
+    ``all_goals sorry`` to finish elaborating, and that warning means it had
+    remaining goals to close.
     """
     if run.timed_out:
         return Classification("timeout", "lean_timeout")
@@ -343,7 +348,14 @@ def classify_output(run: HarnessRun) -> Classification:
     errors = tuple(str(message.get("data", ""))
                    for message in run.messages
                    if message.get("severity") == "error")
+    sorry_closed = any(
+        message.get("severity") == "warning"
+        and "sorry" in str(message.get("data", "")).lower()
+        for message in run.messages
+    )
     if run.returncode == 0 and not errors:
+        if sorry_closed:
+            return Classification("accepted", "remaining_goals_closed_by_harness")
         return Classification("closed", None)
 
     if errors and all("unsolved goals" in error for error in errors):

@@ -177,3 +177,73 @@ def test_rrf_breaks_equal_scores_by_name():
     second = _StaticRetriever(["A"])
     fused = RRFRetriever([first, second])
     assert [name for name, _ in fused.search("q", k=2)] == ["A", "B"]
+
+
+def test_embedding_encoder_honours_the_requested_device(monkeypatch):
+    import contextlib
+    import sys
+    from types import SimpleNamespace
+
+    from neuralproof.embeddings import EmbeddingEncoder
+
+    calls = {"model": [], "tokens": []}
+
+    class _Tensor:
+        def __init__(self, data):
+            self.data = np.asarray(data, dtype=np.float32)
+
+        def to(self, device):
+            calls["tokens"].append(device)
+            return self
+
+        def detach(self):
+            return self
+
+        def float(self):
+            return self
+
+        def cpu(self):
+            return self
+
+        def numpy(self):
+            return self.data
+
+    class _Tokenizer:
+        def __call__(self, batch, **kwargs):
+            shape = (len(batch), 2)
+            return {"input_ids": _Tensor(np.zeros(shape)),
+                    "attention_mask": _Tensor(np.ones(shape))}
+
+    class _Model:
+        config = SimpleNamespace(hidden_size=2)
+
+        def eval(self):
+            return self
+
+        def to(self, device):
+            calls["model"].append(device)
+            return self
+
+        def __call__(self, **tokens):
+            batch = tokens["input_ids"].data.shape[0]
+            return SimpleNamespace(last_hidden_state=_Tensor(np.ones((batch, 2, 2))))
+
+    fake_torch = SimpleNamespace(
+        device=lambda value: value,
+        inference_mode=contextlib.nullcontext,
+        set_num_threads=lambda value: None,
+    )
+    fake_transformers = SimpleNamespace(
+        AutoTokenizer=SimpleNamespace(from_pretrained=lambda *a, **k: _Tokenizer()),
+        AutoModel=SimpleNamespace(from_pretrained=lambda *a, **k: _Model()),
+    )
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    monkeypatch.setitem(sys.modules, "transformers", fake_transformers)
+
+    encoder = EmbeddingEncoder("fake-model", device="cuda")
+    assert encoder.device == "cuda"
+    assert calls["model"] == ["cuda"]
+    vectors = encoder.encode(["a", "b"])
+    assert vectors.shape == (2, 2)
+    assert calls["tokens"] and all(device == "cuda" for device in calls["tokens"])
+

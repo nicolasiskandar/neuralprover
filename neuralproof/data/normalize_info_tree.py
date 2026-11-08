@@ -92,9 +92,9 @@ def normalize_trace(trace: dict[str, Any], source_file: str | Path, *, seed: str
                 excluded["ambiguous_owner" if owners else "outside_proof"] += 1
                 continue
             owner = next(iter(owners))
-        if "\n" in tactic and not tactic.endswith("\n"):
-            # Multiline tactic blocks are retained only when source slicing has
-            # not accidentally bundled multiple commands.
+        if "\n" in tactic:
+            # InfoTree spans for one tactic normally stay on one line. A span
+            # that crosses lines may bundle several commands, so exclude it.
             excluded["wrapper_or_non_tactic"] += 1
             continue
         candidates.setdefault((owner, start, end), []).append((node, tactic))

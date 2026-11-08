@@ -99,3 +99,15 @@ def test_the_manifest_pins_the_input_digest(tmp_path, source_rows, traced):
     assert manifest["input_sha256"]
     assert manifest["selected_files"] == 1
     assert manifest["schema_version"] == 1
+
+
+def test_file_stats_are_written_for_the_processed_tranche(tmp_path, source_rows, traced):
+    traced([{"example_id": "e1", "source_file": "Mathlib/A.lean",
+             "source_declaration": "A.t", "goal_state": "⊢ True",
+             "target_tactic": "trivial", "validation": "replayed"}])
+    output = tmp_path / "out"
+    replay_corpus(source_rows, tmp_path, output)
+    stats = [json.loads(line) for line in
+             (output / "file_stats.jsonl").read_text().splitlines() if line.strip()]
+    assert [row["source_file"] for row in stats] == ["Mathlib/A.lean"]
+    assert stats[0]["status"] in {"ok", "partial", "error"}

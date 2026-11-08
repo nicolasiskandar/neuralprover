@@ -93,3 +93,25 @@ def test_resume_rejects_a_changed_manifest(monkeypatch, tmp_path, traced_root):
     extract_info_tree_corpus(root, output, files=1, timeout=300)
     with pytest.raises(ValueError, match="timeout_seconds"):
         extract_info_tree_corpus(root, output, files=1, timeout=600)
+
+
+def test_resume_survives_missing_checkpoint_files(monkeypatch, tmp_path, traced_root):
+    # If the checkpoint says the tranche is complete but the JSONL files were
+    # removed, the summary pass must report zero examples instead of crashing.
+    root, trace = traced_root
+    output = tmp_path / "out"
+    monkeypatch.setattr("neuralproof.data.info_tree_corpus.trace_file", lambda *a, **k: trace)
+    extract_info_tree_corpus(root, output, files=1)
+    (output / "examples.jsonl").unlink()
+    (output / "file_stats.jsonl").unlink()
+    summary = extract_info_tree_corpus(root, output, files=1)
+    assert summary["examples"] == 0
+
+
+def test_a_broad_import_is_an_exact_line_not_a_narrower_module():
+    from neuralproof.data.info_tree_corpus import _is_broad_import_context
+    assert _is_broad_import_context("import Lean\nimport Mathlib")
+    assert _is_broad_import_context("public import Mathlib")
+    assert not _is_broad_import_context("import Mathlib.Tactic")
+    assert not _is_broad_import_context("import Lean")
+

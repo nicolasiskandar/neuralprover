@@ -96,7 +96,6 @@ def replay_corpus(input_file: Path, mathlib_root: Path, output: Path, *,
                                                 ensure_ascii=False) + "\n")
                         written.add(row["example_id"])
         stats_by_file[relative] = file_stats
-        _checkpoint(stats_path, None) if False else None
         tmp_stats = stats_path.with_suffix(stats_path.suffix + ".tmp")
         tmp_stats.write_text("".join(json.dumps(x, ensure_ascii=False) + "\n"
                                     for _, x in sorted(stats_by_file.items())))

@@ -389,7 +389,12 @@ def test_real_lean_harness_reports_a_partial_tactic_as_accepted(repo_root):
                                             close_remaining=True)
     self_run = transition.run_harness(
         self_harness.text, project_dir=repo_root / "lean", timeout=120)
-    assert transition.classify_output(self_run).status == "closed"
+    # The self-check harness closes the leftover goals with `all_goals sorry`,
+    # so Lean warns that the declaration uses `sorry`.  That is acceptance
+    # evidence for the target tactic, not a closed proof of the declaration.
+    self_class = transition.classify_output(self_run)
+    assert self_class.status == "accepted"
+    assert self_class.reason == "remaining_goals_closed_by_harness"
 
     # `constructor` applies but leaves the two conjuncts open.  Because the
     # candidate harness has no `all_goals sorry`, Lean must report only

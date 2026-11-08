@@ -254,6 +254,41 @@ def test_process_row_falls_back_to_an_accepted_self_check(tmp_path, monkeypatch)
     assert record["models"]["lora"]["status"] == "closed"
 
 
+def test_a_self_check_closed_with_sorry_is_accepted_not_closed(tmp_path, monkeypatch):
+    # `all_goals sorry` finishing elaboration is not a proof: Lean warns that
+    # the declaration uses `sorry`, so the row is accepted evidence only.
+    source = tmp_path / "A.lean"
+    source.write_text("import Lean\n")
+
+    def fake_build(trace, source_file, row, replacement=None, *,
+                   project_dir=None, close_remaining=False):
+        text = b"self-check" if replacement is None else replacement.encode("utf-8")
+        return SimpleNamespace(
+            text=text,
+            span=SimpleNamespace(as_dict=lambda: {
+                "target_kind": "tactic", "is_fragment": False}),
+        )
+
+    def fake_run(text, *, project_dir=None, timeout=120):
+        if text == b"self-check":
+            return HarnessRun(
+                0, ({"severity": "warning", "data": "declaration uses `sorry`"},),
+                "", "", False, 0.1)
+        return HarnessRun(0, (), "", "", False, 0.1)
+
+    monkeypatch.setattr(acceptance, "build_harness", fake_build)
+    monkeypatch.setattr(acceptance, "run_harness", fake_run)
+
+    item = _item("1", prediction="trivial")
+    record = acceptance.process_row(
+        item, {}, source, models=["base", "lora"], timeout=1)
+    assert record["self_check"]["status"] == "accepted"
+    assert record["self_check"]["reason"] == "remaining_goals_closed_by_harness"
+    assert record["self_check"]["strategy"] == "close_remaining"
+    assert record["models"]["base"]["status"] == "closed"
+    assert record["models"]["lora"]["status"] == "closed"
+
+
 def test_markdown_report_includes_status_tables():
     records = [
         _record("1", {"base": "closed", "lora": "accepted"}, exact=True),

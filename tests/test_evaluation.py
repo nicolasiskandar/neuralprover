@@ -114,6 +114,23 @@ def test_pass_at_10_is_computed_when_repeat_attempts_exist():
     assert summary["pass_at_10"] == pytest.approx(0.5)
 
 
+def test_pass_at_1_is_the_mean_per_attempt_rate_with_repeat_samples():
+    summary = summarize([
+        {"verified": True, "attempts": 10, "verified_attempts": 2},
+        {"verified": False, "attempts": 10, "verified_attempts": 0},
+    ])
+    # The theorem-level solve rate is 0.5, but only 2 of 20 attempts verified.
+    assert summary["solve_rate"] == pytest.approx(0.5)
+    assert summary["pass_at_1"] == pytest.approx(0.1)
+    assert "per-attempt" in summary["pass_at_1_protocol"]
+
+
+def test_pass_at_1_matches_the_solve_rate_without_repeat_samples():
+    summary = summarize([{"verified": True}, {"verified": False}])
+    assert summary["pass_at_1"] == pytest.approx(0.5)
+    assert "no repeat samples" in summary["pass_at_1_protocol"]
+
+
 
 # --- the confidence interval ------------------------------------------------
 

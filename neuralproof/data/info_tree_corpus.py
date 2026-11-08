@@ -4,12 +4,25 @@ from __future__ import annotations
 import hashlib
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 from neuralproof.data.extraction import MATHLIB_REVISION
 from neuralproof.data.info_tree import trace_file
 from neuralproof.data.normalize_info_tree import normalize_trace
+
+
+def _is_broad_import_context(context: str) -> bool:
+    """True when the context has an exact `import Mathlib` line.
+
+    A trailing newline is not required, and a narrower import such as
+    `import Mathlib.Tactic` is not counted as the broad library import.
+    """
+    return any(
+        re.fullmatch(r"(?:public\s+|meta\s+)?import\s+Mathlib", line.strip())
+        for line in context.splitlines()
+    )
 
 
 def _write_json(path: Path, value: Any) -> None:
@@ -106,7 +119,8 @@ def extract_info_tree_corpus(mathlib_root: Path, output: Path, *, files: int = 2
         completed.add(relative)
         _write_json(completed_path, {"files": sorted(completed), "last_file": relative})
 
-    examples = [json.loads(line) for line in examples_path.read_text().splitlines() if line.strip()]
+    examples = ([json.loads(line) for line in examples_path.read_text().splitlines() if line.strip()]
+                if examples_path.exists() else [])
     counts = {name: sum(row.get("split") == name for row in examples)
               for name in ("train", "validation", "test")}
     split_files = {name: len({row["source_file"] for row in examples if row.get("split") == name})
@@ -128,7 +142,7 @@ def extract_info_tree_corpus(mathlib_root: Path, output: Path, *, files: int = 2
                "failed_files": failed_files,
                "files_with_examples": len({row["source_file"] for row in examples}),
                "duplicate_example_ids": len(examples) - len({row["example_id"] for row in examples}),
-               "broad_import_context_rows": sum("import Mathlib\n" in row["context"] for row in examples)}
+               "broad_import_context_rows": sum(_is_broad_import_context(row["context"]) for row in examples)}
     _write_json(output / "summary.json", summary)
     return summary
 

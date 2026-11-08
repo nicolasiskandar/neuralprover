@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -85,8 +86,20 @@ def code_diff_sha256() -> str | None:
 
 
 def current_command() -> str:
-    """The command line that produced the artifact."""
-    return "python -m neuralproof.cli " + " ".join(sys.argv[1:])
+    """The command line that produced the artifact.
+
+    `sys.orig_argv` keeps the interpreter and the real entry point, so a
+    `scripts/*.py` invocation is not mislabeled as `python -m neuralproof.cli`.
+    The interpreter is normalized to `python` so provenance is host-neutral.
+    """
+    argv = list(getattr(sys, "orig_argv", [])) or [sys.executable, *sys.argv]
+    if not argv:
+        return "python"
+    if Path(argv[0]).name.lower().startswith("python"):
+        argv[0] = "python"
+    else:
+        argv[0] = Path(argv[0]).name
+    return shlex.join(argv)
 
 
 def write_manifest(path: str | Path, payload: dict[str, Any]) -> Path:
