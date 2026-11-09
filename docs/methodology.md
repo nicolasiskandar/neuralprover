@@ -10,6 +10,8 @@ H1: task fine-tuning improves held-out tactic prediction and verified solve rate
 
 Planned comparisons: base+greedy, base+bounded search, LoRA+greedy, LoRA+best-first, LoRA+best-first+dedup. Hold model revision, theorem split, decoding samples, per-theorem generation allowance, Lean timeout, and wall-clock budget fixed. Record attempted/verified counts, pass@1 and pass@10 with the sampling protocol, solve-time distribution, tactic calls, expanded nodes, generated tokens, invalid/timeout rates, and hardware use. Use paired bootstrap or binomial confidence intervals for solve rates once sample sizes permit. Tactic exact match is a diagnostic only: alternative valid tactics lower exact match, while matching a tactic does not establish proof completion.
 
+Interactive sessions are human-in-the-loop and are excluded from every baseline and solve-rate comparison. They may be recorded as demonstrations, but they are never autonomous benchmark results. The goal-aware suggestion ranking added for `interact` is a display and search-ordering heuristic, not a learned model or an evaluated metric, and it does not change batch `prove` or `evaluate` behavior.
+
 ## Established methods and possible contribution
 
 LeanDojo/ReProver establish theorem/goal extraction, tactic generation, and retrieval-augmented proving as prior art. LoRA is an established parameter-efficient adaptation technique. Best-first search and deduplication are also established algorithmic patterns. A defensible contribution would therefore be a careful, controlled study of a resource-aware search policy or state-prioritization method on a declared Lean benchmark—not the mere combination of these components. The current work has not established a novel improvement.

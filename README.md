@@ -1,17 +1,28 @@
-# NeuralProof
+# Neural Prover
 
-NeuralProof is a research codebase for Lean 4 tactic prediction and proof search. It is deliberately Python-first, but Lean—not model output—is the acceptance authority. The current environment supports a genuine kernel-checked Lean 4 pipeline, a 200-file staged Mathlib corpus, native InfoTree tracing, and a CPU LoRA training run. Full Mathlib extraction and controlled neural evaluation remain incomplete.
+Neural Prover is a LoRA fine-tuned language model for Lean 4 proof generation. It predict the next tactic from a Lean context and goal state. A bounded best-first search composes those tactics, and Lean's kernel decides whether the resulting proof is valid.
 
-Two properties of the harness matter more than the current numbers, because they decide whether any number is interpretable:
+The harness exists to keep the model's output honest:
 
-- **The prompt is canonical.** `neuralproof.models.prompt.format_tactic_prompt` is the single place where a goal state becomes a prompt. Every mined row, every training example, and every live prediction goes through it, so the model is never shown a goal state in one shape and asked about it in another.
-- **The metric separates silence from error.** A completion that contains no tactic is counted as a `silent_prediction`, not as a wrong tactic, and a candidate that is empty never reaches Lean. A 0/N run therefore says *why* it was 0.
+- **Lean is the acceptance authority.** A proof is reported as verified only after the reconstructed, placeholder-free declaration compiles and `#print axioms` shows no unexpected axioms. `sorry` and `admit` are rejected.
+- **The prompt is canonical.** `neuralproof.models.prompt.format_tactic_prompt` is the single place a goal state becomes a prompt, so mined, training, and live inputs have the same shape.
+- **Silence is not an error.** A completion containing no tactic is counted as a `silent_prediction`, not as a wrong tactic, and an empty candidate never reaches Lean. A 0/N run therefore says _why_ it was 0.
 
-## Environment assessment
+Interactive sessions are explicitly human-in-the-loop. They are useful for stepping through proofs and inspecting suggestions, but they are never counted as autonomous benchmark results.
 
-Observed 2026-10-19: Lean/Lake 4.35.0, Python 3.14.4 default and Python 3.11.17 available, 16 logical CPU threads, about 15 GiB RAM, no visible NVIDIA GPU, and ample workspace disk. `uv` is present. Mathlib v4.35.0 and pinned Lake dependencies have been fetched; Lake reused a compatible cache for 9,030 files. A one-epoch CPU LoRA smoke run used the immutable `HuggingFaceTB/SmolLM2-135M` revision in `configs/model.yaml`; its tiny training loss is not an evaluation metric. Adapter inference ran but generated unusable tactics on the attempted theorem, so no neural solve is claimed.
+## Demo
+[![Neural Prover Demo](https://img.youtube.com/vi/rWPMdyb-cf4/0.jpg)](https://www.youtube.com/watch?v=rWPMdyb-cf4)
 
-## Install and run
+## The model
+
+- **Base:** `HuggingFaceTB/SmolLM2-135M`, immutable revision `4e53f736cbb20a9a0f56b4c4bf378d9f306ff915`.
+- **Adapter:** LoRA rank 8, alpha 16, dropout 0.05, targeting `q_proj` and `v_proj`.
+- **Training:** one epoch, seed 17, on 3,976 proof-scope rows from the 200-file InfoTree corpus.
+- **Task:** next-tactic prediction from the canonical context + proof-state prompt, up to 64 generated tokens. Multiple samples can feed best-first search.
+- **Measured:** 21/342 exact tactic matches on the full eligible held-out set. With search, the LoRA adapter solved 6/50 held-out theorems versus 0/50 for the base model; all solved theorems were single-step.
+- **Scope:** the adapter does not emit a complete proof by itself. Best-first search composes its tactic predictions, and Lean's kernel verifies the result.
+
+## Quick start
 
 ```bash
 uv venv --python python3.11 .venv
@@ -19,53 +30,105 @@ source .venv/bin/activate
 uv pip install -e '.[test]'
 cd lean && lake update && lake build && cd ..
 python -m neuralproof.cli doctor
-pytest
-python -m neuralproof.cli data extract --limit 100
-python -m neuralproof.cli data extract --mathlib --module Mathlib/Data/Nat/Basic.lean --limit 100 --output data/raw/mathlib_mined.jsonl --stats data/raw/mathlib_mined_stats.json
-python -m neuralproof.cli preprocess
-python -m neuralproof.cli evaluate --data data/processed/train.jsonl --output experiments/smoke/results.jsonl
+pytest -m "not lean"
 ```
 
-## Tests
+Lean's version is pinned in `lean/lean-toolchain`, and Mathlib plus its transitive Lake dependencies are locked in `lean/lake-manifest.json`. A missing Lean toolchain or corpus becomes an explicit test skip with a reason, never a silent pass.
 
-The suite is `pytest`. It runs offline and never reaches the network; a missing
-Lean toolchain or corpus becomes a skip with a reason, not a silent pass.
+## Interactive proof stepping
+
+`interact` opens a Lean-checked session. Every typed tactic is sent to Lean immediately; rejected tactics print Lean's error, and a completed proof is verified by the kernel and axiom check.
 
 ```bash
-pytest                        # everything
-pytest -m "not lean"          # the part that needs no Lean toolchain (fast)
-pytest -m lean                # only the cases that invoke Lean and Mathlib
-pytest tests/test_predictor.py -q
-python scripts/check_retrieval.py --no-dense   # corpus + BM25, no model
-python scripts/check_retrieval.py              # adds dense/hybrid and a held-out sanity run
+python -m neuralproof.cli interact --file lean/NeuralProof/Samples.lean
+python -m neuralproof.cli interact \
+  --theorem "theorem demo (p : Prop) (hp : p) : p" \
+  --context "import Lean"
 ```
 
-Markers are `lean` (needs the pinned toolchain), `corpus` (needs a corpus that
-is checked out under `data/`), `model` (needs torch, transformers and a local
-model cache) and `slow`. The suite covers the label policy, the prompt
-canonicalisation, the step budget, the completion boundary, the exclusion
-counters, and the invariants of the generated corpora, next to the real Lean
-proof checks.
+A session looks like this:
 
-Lean 4 must be installed with elan. Its selected version is pinned in `lean/lean-toolchain`; Mathlib and all transitive Lake dependencies are locked in `lean/lake-manifest.json`. The default extractor mines simple local examples. With `--mathlib`, the conservative pilot mines simple one-tactic declarations from the pinned Mathlib source, replays and verifies them, and records provenance and failures. Run `python scripts/collect_mathlib_pilot.py` to reproduce the one-row clean pilot. This is a small real-data pilot, not a general Lean syntax or elaboration-data extractor. The checked-in sample has attribution in `data/raw/MATHLIB-NOTICE.md`.
-
-Native tactic-state traces are available through Lean's pinned frontend `InfoTree` interface:
-
-```bash
-python -m neuralproof.cli data trace \
-  --file lean/.lake/packages/mathlib/Mathlib/Algebra/AddConstMap/Basic.lean \
-  --output data/traces/addconstmap-basic.json
+```text
+Goals (1):
+Goal 1: p : Prop
+hp : p
+⊢ p
+Suggestions (goal-ranked):
+  1. assumption
+  2. trivial
+  3. simp
+  4. omega
+  5. exact True.intro
+Type a tactic, or :help for commands.
+[0 tactics] > assumption
+Lean: accepted — no goals remain
+Kernel: VERIFIED (axioms: none)
+Use :save [path] to write the proof.
 ```
 
-The command exports tactic syntax and before/after goals from actual elaboration. Nested tactics and macro combinators create overlapping nodes, so this is raw trace data and should be filtered before constructing next-tactic examples. The resumable staged corpus command uses the verified replay subset and retains per-file extraction statistics. Its reconstructed context uses source imports and active directives while excluding the theorem under extraction; examples that rely on earlier declarations from that same source file are reported as replay failures:
+### Commands
 
-```bash
-python -m neuralproof.cli data corpus --files 200 --per-file 5 --output data/mathlib-200
-```
+| Command        | Effect                                                  |
+| -------------- | ------------------------------------------------------- |
+| `<tactic>`     | Apply a tactic and print the goals Lean reports.        |
+| `:goals`       | Re-inspect and print the current goals.                 |
+| `:suggest [n]` | Show ranked predictor suggestions; nothing is applied.  |
+| `:search`      | Run bounded best-first search from the current state.   |
+| `:undo`        | Remove the last tactic.                                 |
+| `:verify`      | Re-run the kernel and axiom check on the current proof. |
+| `:save [path]` | Write the proof and a `.json` sidecar.                  |
+| `:reset`       | Return to the initial goal.                             |
+| `:help`        | List commands.                                          |
+| `:quit`        | Exit the session.                                       |
 
-It deterministically selects sorted source paths from the pinned Mathlib checkout, keeps a file-level split, and checkpoints each completed file. See [docs/mathlib-corpus.md](docs/mathlib-corpus.md) for the schema and limitations.
+### Suggestions and search
 
-For LoRA, use Python 3.11 or 3.12 for the pinned training stack and provide a local JSONL dataset with `context`, `goal_state`, and `target_tactic`. The observed Python 3.14 environment is suitable for the standard-library Lean MVP, but is outside the pinned training extra's supported range. On CPU-only machines, use the official CPU wheel index so `uv` does not select the much larger CUDA build:
+Suggestions are shown automatically after the initial goal, after each accepted step, after a rejection, and after `:undo`/`:reset`. They are **never applied automatically**; `--no-auto-suggest` turns the display off.
+
+By default they are ordered by the current goal shape. For example, `rfl` is demoted when the two sides of an equality are not syntactically equal, while `omega` or `ac_rfl` is promoted when the goal and context fit. `--no-rank-suggestions` keeps the predictor's original order. The displayed order is a heuristic rank: it is not a probability, and it is not a promise that Lean will accept the tactic.
+
+`:search` explores a bounded best-first tree from the current state using that same goal-ranked order. Its `--width` defaults to `--max-suggestions`, so the tactics shown by `:suggest` are the ones it tries first. A machine-found proof is loaded into the session only after the kernel and axiom check succeed.
+
+Without `--tactics` or a model, the default portfolio is `rfl`, `trivial`, `assumption`, `simp`, `omega`, and `exact True.intro`, plus `ac_rfl` when the context imports Mathlib. Pass `--tactics "…"` (comma-separated or a JSON array) to supply your own candidates.
+
+Other useful flags: `--model-id`, `--adapter`, and `--revision` load an HF predictor; `--max-suggestions` sets the default display count; `--nodes` and `--width` bound search; `--timeout` and `--save-dir` control execution and output.
+
+Inaccessible-name markers such as `inst✝` or `x✝¹` are hidden in the rendered goals. This is display-only: `canonical_goal_state`, prompts, corpus rows, and verification keep Lean's exact text.
+
+A saved proof gets a `.lean` file and a `.json` sidecar marked `"human_in_the_loop": true`, together with its history, verification result, declaration name, and axioms. Never mix these files with autonomous benchmark results.
+
+## Pipeline
+
+- `neuralproof.data` extracts, normalizes, and preprocesses Lean data.
+- `neuralproof.lean` runs Lean, parses goal states, and verifies declarations.
+- `neuralproof.models` formats prompts and loads the static or HF predictor.
+- `neuralproof.search` runs bounded best-first search over Lean-checked successors.
+- `neuralproof.evaluation` scores tactic prediction and whole-theorem search.
+- `neuralproof.interactive` and `neuralproof.suggestions` provide the CLI session and goal-aware candidate ranking.
+
+See [docs/architecture.md](docs/architecture.md) for the design and its deliberate limits.
+
+## Commands
+
+| Command                | Purpose                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| `doctor`               | Report the active Lean toolchain and Python version.                                           |
+| `data extract`         | Conservative source parser plus Lean goal inspection and tactic replay.                        |
+| `data trace`           | Raw native Lean 4 InfoTree tactic and goal export.                                             |
+| `data normalize-trace` | Normalize source spans into supervised tactic JSONL, with exclusion stats.                     |
+| `data trace-corpus`    | Resumable staged native InfoTree extraction for Mathlib files.                                 |
+| `data corpus`          | Resumable staged Mathlib replay extraction.                                                    |
+| `preprocess`           | Formatting, deterministic file-level splits, scope/label filtering, and a provenance manifest. |
+| `train`                | Optional causal-LM LoRA SFT using Transformers and PEFT.                                       |
+| `prove`                | Bounded best-first search using a static tactic list.                                          |
+| `evaluate`             | Fixed-budget search evaluation of whole theorem headers.                                       |
+| `evaluate-tactics`     | Held-out tactic-prediction comparison of base and adapter.                                     |
+| `interact`             | Lean-checked interactive proof stepping with optional suggestions.                             |
+| `report`               | Summarize result files under a directory.                                                      |
+
+## Training and evaluation
+
+Training uses the optional `train` extra on Python 3.11 or 3.12. On CPU-only machines, select the CPU wheel index explicitly:
 
 ```bash
 uv pip install --python .venv/bin/python \
@@ -77,71 +140,70 @@ uv pip install --python .venv/bin/python \
   --data data/mathlib-info-tree-200/processed/train.jsonl \
   --model HuggingFaceTB/SmolLM2-135M \
   --revision 4e53f736cbb20a9a0f56b4c4bf378d9f306ff915 \
-  --output experiments/mathlib-info-tree-lora-200-1epoch-canonical --epochs 1 --seed 17
+  --output experiments/mathlib-info-tree-lora-200-1epoch-canonical \
+  --epochs 1 --seed 17
 ```
 
-`--max-steps` is the step budget. It defaults to `-1`, which trains for the full number of epochs; `0` is rejected, because `TrainingArguments` reads any non-negative budget as a hard limit and would end the run after its first step. `--goal-scope proof` (the default) trains only on rows whose mined goal state is the proof-global goal list, which is the only state the live client reports; a focus-local state is a different input distribution.
+`--max-steps` is the step budget: `-1` trains the full number of epochs, and `0` is rejected. `--goal-scope proof` (the default) trains only on proof-global goal states, which is the distribution the live client reports.
 
-The earlier CPU run on five rows from the superseded pilot is historical debugging only. A clean CPU run trained one epoch on 22 examples (22 steps, loss 4.4752). On the same two test theorems and a 6-node/width-3 search budget, the base and LoRA models each verified 0/2; the Wilson interval is [0, 0.658] for either rate. This sample is too small for meaningful model-quality claims. Traces are in `experiments/clean-base-test/` and `experiments/clean-lora-test/`.
-
-Run only on completed/supported data when measuring generalization. The corpus preprocess split is file-level and deterministic; these tiny validation/test sets are not evaluation evidence.
-
-## Current commands
-
-- `doctor`: reports the active Lean toolchain and Python version.
-- `data extract`: conservative source parser plus Lean goal inspection and tactic replay.
-- `data trace`: raw native Lean 4 InfoTree tactic and goal export.
-- `data normalize-trace`: conservative source-span normalization into supervised tactic JSONL, with exclusion stats.
-- `data trace-corpus`: resumable staged native InfoTree extraction for Mathlib files.
-- `data corpus`: resumable staged Mathlib replay extraction.
-- `preprocess`: JSONL formatting, deterministic file-level partitioning, and label/scope filtering; writes a provenance `manifest.json`.
-- `train`: optional causal LM LoRA SFT using Transformers and PEFT.
-- `prove`: bounded best-first search using a static tactic list; pass a JSON array to preserve commas inside Lean tactics.
-- `evaluate`: fixed-node/wall-time search evaluation of whole theorem headers, writes per-problem JSONL.
-- `evaluate-tactics`: held-out tactic-prediction comparison of base and LoRA on the same sample.
-- `interact`: step through a proof in a Lean-checked CLI session, with optional model suggestions.
-- `report`: summarizes result files under a directory.
-
-### Interactive proof stepping
-
-`interact` opens a session where every typed tactic is sent to Lean immediately. The prompt shows the current goals and the exact Lean error when a tactic is rejected; a proof is called verified only after the final kernel and axiom check.
+The held-out tactic metric scores exact single-line source tactics, not proof success:
 
 ```bash
-python -m neuralproof.cli interact --file lean/NeuralProof/Samples.lean
-python -m neuralproof.cli interact \
-  --benchmark data/benchmarks/mathlib-test-50.jsonl \
-  --theorem-id bench_np_bench_AlgCat_inv_hom_apply \
+python -m neuralproof.cli evaluate-tactics \
+  --data data/mathlib-info-tree-200/examples.jsonl \
   --adapter experiments/mathlib-info-tree-lora-200-1epoch-canonical \
-  --revision 4e53f736cbb20a9a0f56b4c4bf378d9f306ff915
+  --revision 4e53f736cbb20a9a0f56b4c4bf378d9f306ff915 \
+  --limit 342 --seed neuralproof-mathlib-info-tree-v1
 ```
 
-Commands: `:goals`, `:suggest [n]`, `:search`, `:undo`, `:verify`, `:save [path]`, `:reset`, `:help`, `:quit`. Suggestions are shown automatically after the initial goal, after each accepted step, after a rejection, and after `:undo`/`:reset`; they are never applied automatically, and `--no-auto-suggest` turns the display off. By default they are ordered by the current goal shape (for example, `rfl` is demoted when the two sides of an equality are not syntactically equal, while `omega` or `ac_rfl` is promoted when the goal and context fit); `--no-rank-suggestions` keeps the predictor's original order. The displayed order is a heuristic rank, not a probability or a promise that Lean will accept the tactic. `:search` explores a bounded best-first tree from the current state using that same goal-ranked candidate order; its `--width` defaults to `--max-suggestions`, so the tactics shown by `:suggest` are the ones it tries first. Search loads a proof into the session only after the kernel and axiom check succeed. Inaccessible-name markers such as `inst✝` or `x✝¹` are hidden in the rendered goals; the Lean state, prompts, and verification are unchanged. A saved proof gets a `.json` sidecar marked `human_in_the_loop: true`, so an interactive proof is never counted as an autonomous benchmark result.
+See [docs/reproducibility.md](docs/reproducibility.md) for corpus builds, trace commands, artifact hashes, and the full evaluation commands.
 
-Without `--tactics` or a model, the default suggestion portfolio is `rfl`, `trivial`, `assumption`, `simp`, `omega`, and `exact True.intro`, plus `ac_rfl` when the context imports Mathlib. Pass `--tactics "…"` to supply your own candidates.
+## Current status and limits
 
-The static predictor is a testing baseline, not a language model. `neuralproof.models.predictor.load_hf_predictor` loads an HF base model or adapter; pass `--model-id`, `--adapter`, and an immutable `--revision` to `prove`/`evaluate` when available. A completion is scanned for the first line that is not an echo of the prompt, and an empty candidate is dropped rather than sent to Lean, so a model that answered nothing is not recorded as a model error. Search priority can be varied with `--priority bfs`, deduplication can be disabled with `--no-deduplicate`, and width/node limits expose small search ablations. No result should be labeled a base-vs-LoRA comparison until the same held-out set and budget have been executed with both weights.
+The end-to-end pipeline is real: Lean extraction, preprocessing, LoRA training, prediction, best-first search, and kernel verification all run. Claims are deliberately narrow.
 
-`evaluate` proves whole theorems and therefore needs a `theorem` header per row; a mined InfoTree row carries a goal state instead and is rejected with a message pointing at `evaluate-tactics`.
+- **50-theorem held-out campaign** (`max_nodes=20`, `width=4`, `timeout=30s`): static baseline 7/50, base model 0/50, one-epoch LoRA 6/50, LoRA plus lemma filter 7/50. All solved theorems were single-step; no multi-step theorem was closed. See [experiments/benchmark-50/report.md](experiments/benchmark-50/report.md).
+- **InfoTree corpus:** 200 sorted Mathlib files yielded 6,221 mined transitions; 246 (4.0 %) are not tactics and are excluded, leaving 5,975 rows split 4,789 / 773 / 413 by source file. Contexts are reconstructed and have not been independently replayed, so these are next-tactic supervision, not proof certificates.
+- **Replay corpus:** 25 verified examples across 11 files, with only 1 validation and 2 test rows. Far too small for reliable claims.
+- **Held-out tactic prediction:** a full-epoch LoRA reached 21/342 exact matches (6.14 %, Wilson 95 % CI [0.0405, 0.0920]) versus 0/342 for the base model. This is tactic exact match, not a proof-solving rate.
+- **Retrieval and lemma filtering** are measurement/plumbing experiments, not demonstrated solve-rate gains. The filter is opt-in and never replaces Lean.
+- **Interactive demonstrations** such as `omega` on `a + b = b + a` and `ac_rfl` on an abstract `AddCommMonoid` verify in Lean, but they are human-in-the-loop demos, not benchmark results.
 
-### Lemma pre-filter (opt-in)
+The Lean client starts a fresh compiler process per tactic and replays the complete prefix. This isolates failures but is not a persistent REPL, and it costs seconds per cold invocation.
 
-`prove` and `evaluate` accept `--filter-invalid-lemmas`, which refuses a candidate before it reaches Lean when it names an identifier absent from both the pinned Mathlib name index and the current context/goal state. It is **off by default**; existing runs are unchanged. The filter is a budget heuristic, not a correctness check: a name can exist and still not apply, so Lean remains the acceptance authority for every tactic that is tried.
+Full evidence, negative results, and limitations are in [docs/methodology.md](docs/methodology.md), [experiments/log.md](experiments/log.md), and [docs/reproducibility.md](docs/reproducibility.md).
 
-The index is generated from the pinned environment, not maintained by hand:
+## Tests
 
 ```bash
-python scripts/build_lemma_index.py        # writes data/lemma_index.json.gz + .meta.json
-python scripts/check_lemma_filter.py --limit 342
+pytest                        # everything
+pytest -m "not lean"          # no Lean toolchain needed
+pytest -m lean                # only real Lean/Mathlib cases
+pytest tests/test_interactive.py -q
+python scripts/check_retrieval.py --no-dense
 ```
 
-`data/lemma_index.meta.json` records the Mathlib revision, Lean toolchain, dump hash, command, row counts, and output SHA-256. The index contains every constant name printed by Lean plus each name's last component, so an unqualified reference such as `range_eq_Ico` can resolve to `Finset.range_eq_Ico`. Indexing last components deliberately accepts some namespaces that would not elaborate; that only costs a Lean call, whereas dropping a name would produce a false reject. The held-out source tactics in the 342-row diagnostic are all accepted, while 62 of the 342 one-epoch LoRA predictions are refused and none of the 21 correct predictions is lost. Those numbers measure filter plumbing; they are not a proof-solving result.
+Markers are `lean`, `corpus`, `model`, and `slow`. The suite covers the label policy, prompt canonicalization, step budgets, completion boundaries, exclusion counters, corpus invariants, and real Lean proof checks.
 
-## Soundness and current limits
+## Repository layout
 
-The Lean client starts a fresh compiler process per tactic, replays the complete prefix, and asks Lean to print goals. This isolates candidate failures but costs seconds per cold invocation; it is not a persistent REPL. A tactic transition that closes the goal is accepted only after the reconstructed placeholder-free declaration compiles. `sorry` and `admit` are rejected by the final verifier. Multiple goals can be replayed, but state identity is currently the tactic prefix, not semantic environment equivalence; deduplication by printed goals is deliberately not used.
+```text
+neuralproof/   LoRA training/inference plus data, Lean, search, evaluation, and interactive modules
+lean/          pinned Lean 4 and Mathlib project
+tests/         pytest suite, including real-Lean cases
+configs/       experiment settings
+docs/          architecture, corpus, methodology, reproducibility
+experiments/   run artifacts; experiments/log.md is the tracked log
+data/          generated corpora and indexes; large artifacts are not committed
+scripts/       index builders, retrieval checks, benchmark campaigns
+```
 
-This MVP checks for unexpected axioms (allowing Lean's standard foundational `propext`, `Classical.choice`, and `Quot.sound`), but does not yet handle arbitrary syntax in supervised replay extraction, provide retrieval, compute pass@10, or measure GPU usage. The staged replay corpus contains 25 verified examples from 11 files, but its validation/test contain only 1 and 2 examples and are far too small for reliable claims. The checked-in one-row Mathlib pilot and three additional Mathlib-backed local smoke examples exercise tactic replay. This is not a benchmark. Remaining gaps are recorded in `docs/methodology.md` and `experiments/log.md`.
+## Documentation
 
-The 200-file InfoTree corpus is the source of the held-out tactic metric. It holds 6,221 mined transitions, of which 246 (4.0 %) are not tactics at all — the `by` of a declaration header, the `where` of a structure instance, a term brace, a placeholder — and are excluded from both training and scoring. The remaining 5,975 rows are split 4,789 / 773 / 413 by source file. Its contexts are reconstructed from source imports and active directives and have *not* been independently replayed, so its rows are next-tactic supervision, not proof certificates.
+- [docs/architecture.md](docs/architecture.md): modules, data record, search, and interactive sessions.
+- [docs/mathlib-corpus.md](docs/mathlib-corpus.md): corpus schema and limitations.
+- [docs/methodology.md](docs/methodology.md): research design, controls, and experimental status.
+- [docs/reproducibility.md](docs/reproducibility.md): pinned versions, commands, and artifact provenance.
+- [experiments/log.md](experiments/log.md): chronological record of runs and findings.
 
-The first recorded held-out comparison of base vs LoRA reported 0/50 exact matches. That number was a harness artifact, not a model result: the prompt ended with a blank line, the model mirrored that blank line, and the harness read the model's first line as the tactic — so it recorded the model's silence as a wrong answer. With the canonical prompt and an echo-aware completion boundary, the same comparison still reports 0/50 on that small sample, but the run now records *how* each prediction failed (22 of 50 base and 2 of 50 LoRA completions contained no tactic at all; the rest were wrong tactics). A full-epoch LoRA (3976 proof-scope rows, 1 epoch) trained on the corrected pipeline achieved 21/342 exact matches (6.14%, Wilson 95% CI [0.0405, 0.0920]) on the full eligible held-out set (342 of 446 test rows; 33 excluded as non-tactic targets, 71 excluded as focus-scope). The base model was 0/342 (0.0%) with 157 silent predictions; the adapter produced 0 silent predictions. This is a tactic-prediction metric (exact string match of single-line source tactics), not a proof-solving rate. Neither the numbers nor the sample support general claims; see `experiments/log.md`.
+Mathlib-derived sample data is attributed in [data/raw/MATHLIB-NOTICE.md](data/raw/MATHLIB-NOTICE.md).

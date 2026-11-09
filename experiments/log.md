@@ -1,5 +1,13 @@
 # Experiment log
 
+## 2026-11-09 — interactive proof stepping with goal-ranked suggestions
+
+- Added `neuralproof/interactive.py` and the `interact` CLI: every tactic is sent to Lean immediately, and a proof is verified only after the kernel and `#print axioms` check. Suggestions are displayed but never auto-applied; `--no-auto-suggest` disables the display.
+- Added `neuralproof/suggestions.py` with a goal-aware reranker and `RankedPredictor`. Ranking is a heuristic ordering, not a probability. `:search` now searches the same ranked candidates shown by `:suggest`, and interactive `--width` defaults to `--max-suggestions`. Batch `prove`/`evaluate` behavior is unchanged.
+- Manual Lean checks: `theorem add_comm_nat (a b : Nat) : a + b = b + a` verified with `omega` (axioms: `propext`, `Quot.sound`); `theorem add_comm_abs {α : Type} [AddCommMonoid α] (a b : α) : a + b = b + a` verified with `ac_rfl` (same axioms). These are human-in-the-loop demonstrations, not benchmark results.
+- The interactive formatter hides Lean's `✝` inaccessible-name markers (`inst✝`, `inst✝¹`, `x✝²`). This is display-only; `canonical_goal_state`, prompts, and corpus rows are unchanged.
+- Tests: 439 non-Lean tests pass; 30 Lean-marked tests pass. No solve-rate or autonomous-benchmark claim is made from interactive sessions.
+
 ## 2026-11-07 — held-out 50-theorem proof-search campaign
 
 - Constructed `data/benchmarks/mathlib-test-50.jsonl` (and `manifest.json`), an audited, held-out benchmark of 50 Mathlib theorems drawn strictly from the `test` split of `data/mathlib-info-tree-200/examples.jsonl`. It is stratified 50/50: 25 single-step completed proofs and 25 multi-step proofs, spanning 14 source files. Every theorem is pre-validated by Lean 4 (`LeanClient.inspect()`) to elaborate cleanly.

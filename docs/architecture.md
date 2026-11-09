@@ -1,8 +1,14 @@
 # Architecture
 
-The pipeline is divided into data (`neuralproof.data`), Lean execution (`neuralproof.lean`), model (`neuralproof.models`), search (`neuralproof.search`), and evaluation (`neuralproof.evaluation`). LeanClient deliberately uses isolated compiler subprocesses and replays each prefix. This is slower than an incremental server, but the currently selected interface is explicit, crash-contained, and does not reuse failed tactic state. The Lean documentation describes an interactive REPL for machine clients; a future performance iteration can replace the replay backend with that protocol while preserving the Python datatypes.
+NeuralProof pairs a LoRA next-tactic model with a Lean 4 harness. The model adapts `SmolLM2-135M` to predict one tactic from a canonical context and goal state; the harness turns those predictions into Lean-checked proofs. The Python pipeline is divided into data (`neuralproof.data`), Lean execution (`neuralproof.lean`), model (`neuralproof.models`), search (`neuralproof.search`), evaluation (`neuralproof.evaluation`), and interactive sessions (`neuralproof.interactive`). LeanClient deliberately uses isolated compiler subprocesses and replays each prefix. This is slower than an incremental server, but the currently selected interface is explicit, crash-contained, and does not reuse failed tactic state. The Lean documentation describes an interactive REPL for machine clients; a future performance iteration can replace the replay backend with that protocol while preserving the Python datatypes.
 
 Search is best-first over predictor scores, bounded by expanded nodes, depth, and wall-clock time. Every successor is produced by Lean. A completed candidate is reconstructed and checked again by the compiler. Prefix-based deduplication only collapses identical histories; safe semantic deduplication needs environment-aware state identity.
+
+## Interactive sessions and suggestion ranking
+
+`neuralproof.interactive` wraps `LeanClient` in a human-in-the-loop loop. `ProofSession.apply` sends each typed tactic to Lean and stores the returned goals; a proof is treated as complete only after `ProofSession.verify` re-elaborates the declaration and the axiom check passes. Saved sessions carry a sidecar marked `human_in_the_loop: true`, so they are never counted as autonomous benchmark results.
+
+The interactive CLI also exposes suggestions from a predictor. `neuralproof.suggestions.rank_candidates` reorders the candidates a predictor already returned using the rendered goal: for example, `rfl` is demoted when the two sides of an equality are not syntactically equal, and `omega` or `ac_rfl` is promoted when the goal and context fit. `RankedPredictor` applies that order to `:search`, assigning rank-based scores so best-first expansion follows the displayed order. Ranking is a heuristic ordering only: it is not a probability, it does not run Lean, and it never invents or applies a candidate. Batch `prove` and `evaluate` keep the predictor's original scores.
 
 ## Data record
 

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "neuralproof"
 version = "0.1.0"
-description = "Research infrastructure for neural Lean 4 theorem proving"
+description = "LoRA fine-tuned neural tactic generation and Lean 4 proof search"
 requires-python = ">=3.11"
 dependencies = []
 

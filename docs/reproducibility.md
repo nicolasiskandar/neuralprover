@@ -4,6 +4,19 @@ Lean is pinned at `leanprover/lean4:v4.35.0`. Mathlib is pinned at commit `56a00
 
 Record command, git revision, Lean version, Python version, model ID and immutable revision, dataset hash, random seed, inference settings, search limits, and hardware in each experiment directory. Do not use the smoke sample to make performance claims. Current test invocation: `pytest` (the `lean` marker selects the cases that invoke the toolchain; `pytest -m "not lean"` runs the rest).
 
+## Interactive sessions
+
+`interact` runs a human-in-the-loop Lean session. Every typed tactic is sent to Lean; a proof is called verified only after the kernel and axiom check. Start from a file, a benchmark row, or a raw theorem:
+
+```bash
+python -m neuralproof.cli interact --file lean/NeuralProof/Samples.lean
+python -m neuralproof.cli interact --theorem "theorem demo : True" --context "import Lean"
+```
+
+`--tactics`, `--model-id`/`--adapter`, `--max-suggestions`, `--no-auto-suggest`, and `--no-rank-suggestions` control the suggestion portfolio and display. `:search` uses the same goal-ranked candidates as `:suggest`, with `--nodes` and `--width` as its budget; `--width` defaults to `--max-suggestions`. Suggestions are never applied automatically.
+
+`:save` writes `<name>.lean` and a `<name>.json` sidecar marked `"human_in_the_loop": true`. Keep these files separate from benchmark `results.jsonl`; an interactive proof is not an autonomous run and must not enter a solve-rate comparison. The `✝` inaccessible-name markers are stripped only by the interactive formatter (`format_goals`); `canonical_goal_state`, prompts, and corpus rows are unchanged, so prompt parity is unaffected.
+
 The current clean one-row Mathlib pilot JSONL SHA-256 is `7339b56e1477f54367f964cb31d54f1f72f50cb7db081eb1e7820dc4f31800bd`; the Lake manifest SHA-256 is `4edf9b1976ae48624f000401516854e32bab61d2071a9dd3784740f1737ed776`. The 200-file clean corpus selection hash is in `data/mathlib-200/manifest.json`; the rows, per-file stats, and prompt-formatted split files should be archived together. A CPU smoke run used Python 3.11.17, PyTorch 2.6.0+cpu, Transformers 4.49.0, PEFT 0.14.0, seed 17, and the immutable SmolLM2-135M revision `4e53f736cbb20a9a0f56b4c4bf378d9f306ff915`. An earlier five-row pilot training run is superseded because its `import Mathlib` context may have exposed target declarations; see the experiment log for the clean corpus training run and its limitations. Historical trainer artifacts remain under `experiments/smol-lora-smoke/`. The model weights are cached outside the repository; in this environment the cache is `/home/nicolas/.cache/huggingface`, which is selected with `HF_HOME=/home/nicolas/.cache/huggingface` (and `HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1` when the machine has no network).
 
 The native InfoTree extraction smoke command is:
