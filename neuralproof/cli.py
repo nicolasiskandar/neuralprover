@@ -5,6 +5,10 @@ from neuralproof.models.predictor import StaticPredictor
 from neuralproof.search.best_first import best_first
 
 def parse_tactics(value):
+    if isinstance(value, list):
+        if not all(isinstance(x, str) for x in value):
+            raise ValueError("--tactics JSON must be a string array")
+        return value
     if value.lstrip().startswith("["):
         parsed=json.loads(value)
         if not isinstance(parsed,list) or not all(isinstance(x,str) for x in parsed): raise ValueError("--tactics JSON must be a string array")
@@ -42,6 +46,19 @@ def _interactive_source(args):
         return theorem,context
     raise SystemExit("provide --file, --benchmark with --theorem-id, or --theorem")
 
+
+def _default_interactive_tactics(context):
+    """A small default portfolio; add ac_rfl only when Mathlib is imported.
+
+    These are suggestions, not a proof strategy: every one still goes through
+    Lean, and the user decides what to apply.
+    """
+    tactics = ["rfl", "trivial", "assumption", "simp", "omega", "exact True.intro"]
+    if re.search(r"^\s*import\s+Mathlib", context, re.MULTILINE):
+        tactics.append("ac_rfl")
+    return tactics
+
+
 def main():
     p=argparse.ArgumentParser(prog="neuralproof"); s=p.add_subparsers(dest="cmd",required=True); s.add_parser("doctor")
     d=s.add_parser("data"); ds=d.add_subparsers(dest="sub",required=True); e=ds.add_parser("extract"); e.add_argument("--limit",type=int,default=100); e.add_argument("--source",default="lean/NeuralProof/Samples.lean"); e.add_argument("--stats",default="data/raw/extraction_stats.json"); e.add_argument("--output",default="data/raw/sample.jsonl"); e.add_argument("--mathlib",action="store_true"); e.add_argument("--module",default="Mathlib/Data/Nat/Basic.lean"); e.add_argument("--declaration")
@@ -59,9 +76,11 @@ def main():
     rp=s.add_parser("report"); rp.add_argument("--results-dir",default="experiments")
     ia=s.add_parser("interact",help="step through a proof interactively; Lean checks every tactic and the final kernel result")
     ia.add_argument("--file"); ia.add_argument("--benchmark"); ia.add_argument("--theorem-id"); ia.add_argument("--theorem"); ia.add_argument("--context")
-    ia.add_argument("--tactics",default="rfl,trivial,assumption,exact True.intro"); ia.add_argument("--model-id"); ia.add_argument("--adapter"); ia.add_argument("--revision")
+    ia.add_argument("--tactics",default=None,help="comma-separated or JSON list of candidate tactics; defaults to a small portfolio, plus ac_rfl when the context imports Mathlib"); ia.add_argument("--model-id"); ia.add_argument("--adapter"); ia.add_argument("--revision")
     ia.add_argument("--timeout",type=float,default=30); ia.add_argument("--max-suggestions",type=int,default=5)
-    ia.add_argument("--nodes",type=int,default=20); ia.add_argument("--width",type=int,default=4); ia.add_argument("--save-dir",default="experiments/interactive")
+    ia.add_argument("--auto-suggest",action=argparse.BooleanOptionalAction,default=True,help="show suggestions after every step (they are never applied automatically; default: on)")
+    ia.add_argument("--rank-suggestions",action=argparse.BooleanOptionalAction,default=True,help="order suggestions by goal shape instead of predictor order (default: on)")
+    ia.add_argument("--nodes",type=int,default=20); ia.add_argument("--width",type=int,default=None,help="candidates tried per search node; defaults to --max-suggestions"); ia.add_argument("--save-dir",default="experiments/interactive")
     a=p.parse_args()
     if a.cmd=="doctor": print(LeanClient().doctor()); print("Python",sys.version.split()[0]); return
     if a.cmd=="data":
@@ -200,16 +219,18 @@ def main():
     if a.cmd=="interact":
         from neuralproof.interactive import ProofSession,run_repl
         theorem,context=_interactive_source(a)
-        predictor=StaticPredictor(parse_tactics(a.tactics))
+        tactics = a.tactics if a.tactics is not None else _default_interactive_tactics(context)
+        predictor=StaticPredictor(parse_tactics(tactics))
         model_id=a.model_id or ("HuggingFaceTB/SmolLM2-135M" if a.adapter else None)
         if model_id:
             from neuralproof.models.predictor import load_hf_predictor
             predictor=load_hf_predictor(model_id,a.adapter,a.revision)
         try:
-            session=ProofSession(LeanClient(timeout=a.timeout),theorem,context=context,predictor=predictor,max_suggestions=a.max_suggestions)
+            session=ProofSession(LeanClient(timeout=a.timeout),theorem,context=context,predictor=predictor,max_suggestions=a.max_suggestions,rank_suggestions=a.rank_suggestions)
         except RuntimeError as error:
             raise SystemExit(str(error))
-        return run_repl(session,save_dir=a.save_dir,search_budget={"max_nodes":a.nodes,"width":a.width,"timeout":a.timeout})
+        width = a.width if a.width is not None else a.max_suggestions
+        return run_repl(session,save_dir=a.save_dir,auto_suggest=a.auto_suggest,search_budget={"max_nodes":a.nodes,"width":width,"timeout":a.timeout})
     if a.cmd=="report":
         from neuralproof.evaluation.metrics import summarize
         for f in sorted(Path(a.results_dir).rglob("results.jsonl")):

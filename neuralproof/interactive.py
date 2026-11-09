@@ -16,13 +16,14 @@ from pathlib import Path
 from typing import Callable
 
 from neuralproof.lean.client import ProofState, TacticCandidate, VerificationResult
+from neuralproof.suggestions import RankedPredictor, rank_candidates
 
 DEFAULT_SAVE_DIR = Path("experiments/interactive")
 
 _HELP = (
     ("<tactic>", "apply a tactic and print the goals Lean reports"),
     (":goals", "re-inspect and print the current goals"),
-    (":suggest [n]", "show ranked predictor suggestions; nothing is applied"),
+    (":suggest [n]", "show goal-ranked predictor suggestions; nothing is applied"),
     (":search", "run bounded best-first search from the current state"),
     (":undo", "remove the last tactic"),
     (":verify", "re-run the kernel and axiom check on the current proof"),
@@ -47,12 +48,14 @@ class ProofSession:
     """A single proof the user advances one Lean-checked tactic at a time."""
 
     def __init__(self, client, theorem: str, context: str = "import Lean", *,
-                 predictor=None, max_suggestions: int = 5):
+                 predictor=None, max_suggestions: int = 5,
+                 rank_suggestions: bool = True):
         self.client = client
         self.theorem = theorem.strip()
         self.context = context.strip() or "import Lean"
         self.predictor = predictor
         self.max_suggestions = max(1, int(max_suggestions))
+        self.rank_suggestions = bool(rank_suggestions)
         self.history: list[str] = []
         self.verification: VerificationResult | None = None
         self.last_error = ""
@@ -124,10 +127,21 @@ class ProofSession:
         self.last_error = ""
 
     def suggest(self, count: int | None = None) -> list[TacticCandidate]:
+        """Rank the predictor's candidates and truncate to `count`.
+
+        A static predictor exposes its whole portfolio, so asking for more than
+        `max_suggestions` lets the reranker consider candidates that would
+        otherwise be cut off before they can be promoted.
+        """
         if self.predictor is None or self.completed:
             return []
-        limit = int(count) if count is not None else self.max_suggestions
-        return list(self.predictor.predict(self.state, max(1, limit)))
+        limit = max(1, int(count) if count is not None else self.max_suggestions)
+        portfolio = getattr(self.predictor, "tactics", None)
+        request = max(limit, len(portfolio)) if portfolio else limit
+        candidates = list(self.predictor.predict(self.state, request))
+        if self.rank_suggestions:
+            candidates = rank_candidates(self.state, candidates)
+        return candidates[:limit]
 
     def render(self) -> str:
         return self.client.render_proof(self.state)
@@ -154,8 +168,9 @@ class ProofSession:
         if self.completed:
             raise RuntimeError("the proof is already complete")
         from neuralproof.search.best_first import best_first_from_state
+        predictor = RankedPredictor(self.predictor, rank=self.rank_suggestions)
         result = best_first_from_state(
-            self.client, self.state, self.predictor,
+            self.client, self.state, predictor,
             max_nodes=max_nodes, width=width, timeout=timeout,
             max_depth=max_depth, filter_invalid_lemmas=filter_invalid_lemmas,
             lemma_index_path=lemma_index_path)
@@ -198,10 +213,19 @@ def _default_save_path(session: ProofSession) -> Path:
     return DEFAULT_SAVE_DIR / f"{stem}.lean"
 
 
+# Lean marks inaccessible names with `✝` and an optional superscript suffix,
+# e.g. `inst✝ : AddCommMonoid α` or `x✝² : α`.  The marker is cosmetic in a
+# rendered goal, so the interactive display hides it.  The underlying state,
+# model prompts, and corpus renderings keep Lean's exact text.
+_INACCESSIBLE_MARKER = re.compile(r"✝[⁰¹²³⁴⁵⁶⁷⁸⁹]*")
+
+
 def format_goals(goals: tuple[str, ...] | list[str]) -> str:
     if not goals:
         return "(no goals)"
-    return "\n".join(f"Goal {index}: {goal}" for index, goal in enumerate(goals, 1))
+    return "\n".join(
+        f"Goal {index}: {_INACCESSIBLE_MARKER.sub('', goal)}"
+        for index, goal in enumerate(goals, 1))
 
 
 def _show_state(session: ProofSession, output_fn: Callable[[str], None]) -> None:
@@ -231,20 +255,32 @@ def _show_suggestions(session: ProofSession, output_fn: Callable[[str], None],
     if not candidates:
         output_fn("No suggestions.")
         return
+    output_fn("Suggestions (goal-ranked):" if session.rank_suggestions
+              else "Suggestions:")
     for index, candidate in enumerate(candidates, 1):
-        output_fn(f"  {index}. {candidate.tactic:<30} {candidate.score:.2f}")
+        output_fn(f"  {index}. {candidate.tactic}")
+
+
+def _show_auto_suggestions(session: ProofSession,
+                           output_fn: Callable[[str], None]) -> None:
+    """Show suggestions without the "no predictor" notice on every prompt."""
+    if session.predictor is not None and not session.completed:
+        _show_suggestions(session, output_fn)
 
 
 def run_repl(session: ProofSession, *,
              input_fn: Callable[[str], str] = input,
              output_fn: Callable[[str], None] = print,
              save_dir: str | Path | None = None,
-             search_budget: dict | None = None) -> int:
+             search_budget: dict | None = None,
+             auto_suggest: bool = True) -> int:
     """Run the interactive loop.  Returns a process exit code."""
     output_fn("NeuralProof interactive — Lean is the authority")
     output_fn(session.theorem)
     output_fn("")
     _show_state(session, output_fn)
+    if auto_suggest:
+        _show_auto_suggestions(session, output_fn)
     output_fn("Type a tactic, or :help for commands.")
 
     while True:
@@ -287,6 +323,8 @@ def run_repl(session: ProofSession, *,
             if command in {":undo", ":u"}:
                 if session.undo():
                     _show_state(session, output_fn)
+                    if auto_suggest:
+                        _show_auto_suggestions(session, output_fn)
                 else:
                     output_fn("Nothing to undo.")
                 continue
@@ -324,6 +362,8 @@ def run_repl(session: ProofSession, *,
             if command in {":reset", ":r"}:
                 session.reset()
                 _show_state(session, output_fn)
+                if auto_suggest:
+                    _show_auto_suggestions(session, output_fn)
                 continue
             output_fn(f"Unknown command {command!r}; try :help")
             continue
@@ -331,6 +371,8 @@ def run_repl(session: ProofSession, *,
         step = session.apply(line)
         if not step.success:
             output_fn(f"Lean: rejected — {step.error}")
+            if auto_suggest:
+                _show_auto_suggestions(session, output_fn)
             continue
         if step.completed:
             output_fn("Lean: accepted — no goals remain")
@@ -339,3 +381,5 @@ def run_repl(session: ProofSession, *,
         else:
             output_fn(f"Lean: accepted — {len(step.goals)} goal(s) remain")
             _show_state(session, output_fn)
+            if auto_suggest:
+                _show_auto_suggestions(session, output_fn)
